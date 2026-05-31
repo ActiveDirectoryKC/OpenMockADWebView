@@ -4,8 +4,43 @@ Inspired by [MockAD](https://github.com/shokkadev/MockAD-Release) by [shokkadev]
 
 This tool is an HTML, CSS, and Javascript-based tool that can be run locally or via a static webpage to help simulate, visulaize, and mock-up Active Directory (AD) environments. Creating OUs and groups, etc. is slow and tedious. This is intended to make it a little faster. 
 
-> Disclaimer: This tool is based off MockAD and AI assistance was used to create the tool. Please review any outputs and log issues for anything not working as expected.
+> **Disclaimer:** This tool is based off MockAD and AI assistance was used to create the tool.
+> Please review any outputs and log issues for anything not working as expected.
 
+---
+
+# Getting Started 
+## How to Use the Tool
+There are two options. 
+
+### Option 1 - Github Hosted Web View
+Just connect to the following link and you'll have it displayed in your browser. It is hosted on GitHub and it is a pretty boring HTML page in the sense that nothing is gathered or retained. Everything happens client-side. 
+
+- [OpenMockADWebView Public Site](https://activedirectorykc.github.io/OpenMockADWebView)
+
+### Option 2 - Download and Run
+Download the latest release / main and launch the web page manually. 
+
+- [Releases](https://github.com/ActiveDirectoryKC/OpenMockADWebView/releases/new)
+
+## Importing JSON Files
+You can import it two ways. 
+
+### From the "Load JSON" Button
+1. In the top banner find the "Load JSON" button. Click it.
+2. Select the appropriate JSON file on your system and upload it.
+3. The Tree view should refresh automatically with the new data.
+
+### From The Builder
+1. In the center pane, click "{} JSON". This displays the structure in JSON
+2. Past in the JSON you wish to use.
+3. Click "Load JSON" button. Click it.
+4. The Tree View should refresh accordingly.
+
+
+---
+
+# More Details
 ## Origins
 I like MockAD and this was and is not intended to steal any thunder from that work. However, when trying to use MockAD in May 2026, I ran into weird issues with how the Edge Webview rendered that made MockAD kind hard to work with. There were scaling issues in the applications. Also, MockAD is closed source and generated warnings due to being unsigned code.
 
