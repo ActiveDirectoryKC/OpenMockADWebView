@@ -1,6 +1,8 @@
 # OpenMockADWebView
 For generating AD Layouts and visualizing AD structure from JSON for mocking and testing. 
-Inspired by [MockAD](https://github.com/shokkadev/MockAD-Release) by [shokkadev](https://github.com/shokkadev). 
+Inspired by the following. 
+- [MockAD](https://github.com/shokkadev/MockAD-Release) by [shokkadev](https://github.com/shokkadev).
+- [md2ADUC](https://github.com/JimSycurity/md2ADUC) by [JimSycurity](https://github.com/JimSycurity).
 
 This tool is an HTML, CSS, and Javascript-based tool that can be run locally or via a static webpage to help simulate, visulaize, and mock-up Active Directory (AD) environments. Creating OUs and groups, etc. is slow and tedious. This is intended to make it a little faster. 
 
