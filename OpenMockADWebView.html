@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AD OU Tree Builder</title>
+  <title>OpenMockADWebView</title>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     :root{
@@ -71,15 +71,50 @@
     #toast.show{opacity:1;}
     #drag-overlay{display:none;position:fixed;inset:0;z-index:9998;cursor:col-resize;}
     #drag-overlay.on{display:block;}
+  
+    #panel-notes{width:280px;border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;background:var(--surface);}
+    .notes-hdr{height:40px;padding:0 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:#f7f8fc;flex-shrink:0;}
+    .notes-icon{font-size:16px;}
+    .notes-name{font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .notes-path{font-size:10px;color:var(--muted);padding:5px 12px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    #notes-ta{flex:1;border:none;resize:none;outline:none;padding:8px 12px;font-size:12px;font-family:inherit;color:var(--text);line-height:1.65;background:var(--surface);}
+    .notes-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;text-align:center;padding:20px;line-height:1.8;}
+    #legend{display:none;position:fixed;z-index:500;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);padding:12px 16px;min-width:220px;}
+    .leg-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px;}
+    .leg-row{display:flex;align-items:center;gap:10px;padding:3px 0;font-size:12px;}
+    .leg-icon{font-size:15px;width:22px;text-align:center;}
+    .leg-sep{border:0;border-top:1px solid var(--border);margin:6px 0;}
+  
+    #ctx-menu{display:none;position:fixed;z-index:900;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.15);padding:4px;min-width:190px;}
+    .ctx-item{display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;border-radius:4px;font-size:12px;white-space:nowrap;}
+    .ctx-item:hover{background:var(--plt);color:var(--primary);}
+    .ctx-item.danger:hover{background:#fff0ef;color:var(--danger);}
+    .ctx-item.disabled{opacity:.35;pointer-events:none;}
+    .ctx-sep{border:0;border-top:1px solid var(--border);margin:3px 0;}
+  
+    .notes-mode-btn{margin-left:auto;font-size:10px;padding:2px 8px;border:1px solid var(--border);border-radius:3px;background:var(--surface);color:var(--muted);cursor:pointer;font-family:inherit;}
+    .notes-mode-btn:hover{background:var(--plt);color:var(--primary);}
+    #notes-preview{flex:1;overflow:auto;padding:10px 14px;font-size:13px;line-height:1.7;color:var(--text);display:none;}
+    #notes-preview h1{font-size:18px;font-weight:700;margin:0 0 8px;border-bottom:1px solid var(--border);padding-bottom:4px;}
+    #notes-preview h2{font-size:15px;font-weight:600;margin:12px 0 6px;}
+    #notes-preview h3{font-size:13px;font-weight:600;margin:8px 0 4px;}
+    #notes-preview ul,#notes-preview ol{padding-left:20px;margin:4px 0;}
+    #notes-preview li{margin:2px 0;}
+    #notes-preview p{margin:4px 0;}
+    #notes-preview hr{border:0;border-top:1px solid var(--border);margin:10px 0;}
+    #notes-preview strong{font-weight:700;}
+    #notes-preview em{font-style:italic;}
+    #notes-preview u{text-decoration:underline;}
   </style>
 </head>
 <body>
 
 <header>
   <span style="font-size:20px">&#x1F5C2;&#xFE0F;</span>
-  <h1>AD OU Tree Builder</h1>
+  <h1>OpenMockADWebView</h1>
   <div class="hsp"></div>
-  <button class="hbtn" onclick="copyJSON()">&#x2398; Copy JSON</button>
+  <button class="hbtn" id="legend-btn" onclick="toggleLegend(event)">&#x1F511; Key</button>
+    <button class="hbtn" onclick="copyJSON()">&#x2398; Copy JSON</button>
   <button class="hbtn" onclick="downloadJSON()">&#x2193; Download</button>
 </header>
 
@@ -88,7 +123,8 @@
     <div class="pnl-hdr">
       <span class="pnl-title">Preview</span>
       <div class="sp"></div>
-      <button class="btn" onclick="previewSetAll(true)">Expand all</button>
+      <button class="btn" onclick="exportPNG()">&#x1F4F7; PNG</button>
+        <button class="btn" onclick="previewSetAll(true)">Expand all</button>
       <button class="btn" onclick="previewSetAll(false)" style="margin-left:4px">Collapse all</button>
     </div>
     <div class="pnl-body"><ul id="preview-tree" class="tree"></ul></div>
@@ -121,6 +157,16 @@
       <div style="flex:1;overflow:auto"><textarea id="json-ta" spellcheck="false" placeholder="Paste your JSON here..."></textarea></div>
     </div>
   </div>
+  <div class="panel" id="panel-notes">
+    <div class="notes-hdr"><span class="pnl-title">&#x1F4DD; Notes</span><div class="sp"></div><button class="notes-mode-btn" id="notes-mode-btn" onclick="toggleNotesMode()" style="display:none">Preview</button></div>
+    <div class="notes-empty" id="notes-empty">Select a node in the builder<br>to view or edit notes</div>
+    <div id="notes-content" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div class="notes-hdr"><span class="notes-icon" id="notes-icon"></span><span class="notes-name" id="notes-name"></span></div>
+      <div class="notes-path" id="notes-path"></div>
+      <textarea id="notes-ta" placeholder="Add notes here..." spellcheck="false"></textarea>
+      <div id="notes-preview"></div>
+    </div>
+  </div>
 </div>
 
 <div class="statusbar">
@@ -131,6 +177,28 @@
   <span class="sitem" style="margin-left:auto;font-size:10px;opacity:.65">Hover a node for inline actions &middot; Drag divider to resize</span>
 </div>
 
+<div id="ctx-menu">
+  <div class="ctx-item" id="ctx-copy">&#x1F4CB; Copy</div>
+  <div class="ctx-item disabled" id="ctx-paste-child">&#x1F4E5; Paste as Child</div>
+  <div class="ctx-item disabled" id="ctx-paste-sibling">&#x1F4E5; Paste as Sibling</div>
+  <hr class="ctx-sep">
+  <div class="ctx-item" id="ctx-rename">&#x270E; Rename</div>
+  <hr class="ctx-sep">
+  <div class="ctx-item danger" id="ctx-delete">&#x1F5D1; Delete</div>
+</div>
+<div id="legend">
+  <div class="leg-title">Node Types</div>
+  <div class="leg-row"><span class="leg-icon">&#x1F310;</span> Domain</div>
+  <div class="leg-row"><span class="leg-icon">&#x1F4C1;</span> Organizational Unit (OU)</div>
+  <hr class="leg-sep">
+  <div class="leg-row"><span class="leg-icon">&#x1F464;</span> User</div>
+  <div class="leg-row"><span class="leg-icon">&#x1F465;</span> Group</div>
+  <div class="leg-row"><span class="leg-icon">&#x1F4BB;</span> Computer</div>
+  <div class="leg-row"><span class="leg-icon">&#x1F4CB;</span> GPO</div>
+  <hr class="leg-sep">
+  <div class="leg-row"><span class="leg-icon">&#x2699;&#xFE0F;</span> MSA</div>
+  <div class="leg-row"><span class="leg-icon">&#x2699;&#xFE0F;</span> gMSA</div>
+</div>
 <div id="type-picker">
   <div class="tp-section">Containers</div>
   <div class="tp-item" data-type="OU">&#x1F4C1; Organizational Unit (OU)</div>
@@ -143,7 +211,7 @@
   <hr class="tp-sep">
   <div class="tp-section">Service Accounts</div>
   <div class="tp-item" data-type="MSA">&#x2699;&#xFE0F; Managed Service Account (MSA)</div>
-  <div class="tp-item" data-type="gMSA">&#x1F511; Group Managed SA (gMSA)</div>
+  <div class="tp-item" data-type="gMSA">&#x2699;&#xFE0F; Group Managed SA (gMSA)</div>
 </div>
 
 <div id="toast"></div>
@@ -164,7 +232,7 @@ function getIcon(type, isOpen) {
   if (type === 'Computer') return '\uD83D\uDCBB';
   if (type === 'GPO')      return '\uD83D\uDCCB';
   if (type === 'MSA')      return '\u2699\uFE0F';
-  if (type === 'gMSA')     return '\uD83D\uDD11';
+  if (type === 'gMSA')     return '\u2699\uFE0F';
   return '\uD83D\uDCC1';
 }
 
@@ -234,6 +302,8 @@ function buildPNode(n, ul, isBranch) {
   if (isBranch) li.className = 'tn';
   const row = document.createElement('div');
   row.className = 'prow';
+    row.addEventListener('click', () => selectNode(n.id));
+    row.style.cursor = 'pointer';
 
   if (hasKids) {
     const xb = document.createElement('button');
@@ -339,6 +409,7 @@ function buildBNode(n, ul, isBranch) {
 
   row.appendChild(acts);
   row.addEventListener('click', () => selectNode(n.id));
+    row.addEventListener('contextmenu', e => showCtxMenu(e, n.id));
   li.appendChild(row);
 
   const kul = document.createElement('ul');
@@ -355,6 +426,7 @@ function selectNode(id) {
   document.getElementById('btn-add').disabled = !n || leaf;
   document.getElementById('btn-del').disabled = !n || isRoot;
   document.querySelectorAll('.brow').forEach(r => r.classList.toggle('sel', r.dataset.id === id));
+  updateNotes(id);
 }
 
 function addChildTo(parentId, type) {
@@ -486,7 +558,8 @@ function rerender() {
   const n = selId && find(selId, ROOT);
   document.getElementById('btn-add').disabled = !n || isLeaf(n.type);
   document.getElementById('btn-del').disabled = !n || n.id === ROOT.id;
-  if (selId) { const r = document.querySelector('.brow[data-id="' + selId + '"]'); if (r) r.classList.add('sel'); }
+  if (selId) { const r = document.querySelector('.brow[data-id="' + selId + '"]'); if (r) r.classList.add('sel');
+  updateNotes(selId); }
 }
 
 /* ─── Resizer ────────────────────────────────────────────────────────────── */
@@ -505,6 +578,362 @@ function rerender() {
   });
   document.addEventListener('mouseup', () => { if (!dragging) return; dragging = false; resizer.classList.remove('on'); overlay.classList.remove('on'); });
 })();
+
+/* ─── Markdown Notes ────────────────────────────────────────────────────── */
+
+let _notesEdit = true;
+
+function renderMarkdown(raw) {
+  if (!raw) return '<span style="color:var(--muted);font-size:12px">No notes yet</span>';
+  const lines = raw.split('\n');
+  const out = []; let inUl = false, inOl = false;
+  function closeLists() {
+    if (inUl) { out.push('</ul>'); inUl = false; }
+    if (inOl) { out.push('</ol>'); inOl = false; }
+  }
+  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmt(s) {
+    s = esc(s);
+    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    s = s.replace(/__(.+?)__/g, '<u>$1</u>');
+    return s;
+  }
+  for (const line of lines) {
+    const trimmed = line.trimStart();
+    if (trimmed.startsWith('### ')) { closeLists(); out.push('<h3>' + fmt(trimmed.slice(4)) + '</h3>'); continue; }
+    if (trimmed.startsWith('## ')) { closeLists(); out.push('<h2>' + fmt(trimmed.slice(3)) + '</h2>'); continue; }
+    if (trimmed.startsWith('# ')) { closeLists(); out.push('<h1>' + fmt(trimmed.slice(2)) + '</h1>'); continue; }
+    if (/^-{3,}$/.test(trimmed)) { closeLists(); out.push('<hr>'); continue; }
+    if (/^[-*] /.test(trimmed)) {
+      if (!inUl) { closeLists(); out.push('<ul>'); inUl = true; }
+      out.push('<li>' + fmt(trimmed.replace(/^[-*] /, '')) + '</li>');
+      continue;
+    }
+    if (/^\d+\. /.test(trimmed)) {
+      if (!inOl) { closeLists(); out.push('<ol>'); inOl = true; }
+      out.push('<li>' + fmt(trimmed.replace(/^\d+\. /, '')) + '</li>');
+      continue;
+    }
+    closeLists();
+    if (trimmed === '') { out.push('<br>'); continue; }
+    out.push('<p>' + fmt(trimmed) + '</p>');
+  }
+  closeLists();
+  return out.join('\n');
+}
+
+function toggleNotesMode() {
+  _notesEdit = !_notesEdit;
+  const btn = document.getElementById('notes-mode-btn');
+  const ta = document.getElementById('notes-ta');
+  const pre = document.getElementById('notes-preview');
+  btn.textContent = _notesEdit ? 'Preview' : 'Edit';
+  ta.style.display = _notesEdit ? '' : 'none';
+  pre.style.display = _notesEdit ? 'none' : '';
+  if (!_notesEdit) pre.innerHTML = renderMarkdown(ta.value);
+}
+
+/* ─── Context Menu ──────────────────────────────────────────────────────── */
+
+let _clip = null, _ctxId = null;
+
+function deepCopy(n) {
+  return { id: gid(), name: n.name, type: n.type, description: n.description || '', children: (n.children || []).map(deepCopy) };
+}
+
+function findParent(targetId, node, parent) {
+  if (node.id === targetId) return parent;
+  for (const c of (node.children || [])) {
+    const r = findParent(targetId, c, node);
+    if (r) return r;
+  }
+  return null;
+}
+
+function initPSt(node) {
+  if (node.children && node.children.length) {
+    pSt[node.id] = true;
+    node.children.forEach(initPSt);
+  }
+}
+
+function showCtxMenu(e, nodeId) {
+  e.preventDefault(); e.stopPropagation();
+  _ctxId = nodeId; selectNode(nodeId);
+  const n = find(nodeId, ROOT);
+  const isRoot = n && n.id === ROOT.id;
+  const leaf = n && LEAF_TYPES.has(n.type);
+  const hasCb = !!_clip;
+  document.getElementById('ctx-paste-child').className = 'ctx-item' + (!hasCb || leaf ? ' disabled' : '');
+  document.getElementById('ctx-paste-sibling').className = 'ctx-item' + (!hasCb || isRoot ? ' disabled' : '');
+  document.getElementById('ctx-delete').className = 'ctx-item' + (isRoot ? ' disabled' : ' danger');
+  const menu = document.getElementById('ctx-menu');
+  let left = e.clientX, top = e.clientY;
+  if (left + 200 > window.innerWidth) left = window.innerWidth - 204;
+  if (top + 200 > window.innerHeight) top = window.innerHeight - 204;
+  menu.style.left = left + 'px'; menu.style.top = top + 'px'; menu.style.display = 'block';
+}
+
+function hideCtxMenu() { document.getElementById('ctx-menu').style.display = 'none'; }
+
+function toast(msg) {
+  let t = document.getElementById('toast-msg');
+  if (!t) {
+    t = document.createElement('div'); t.id = 'toast-msg';
+    t.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:#1a3f7a;color:#fff;padding:8px 18px;border-radius:6px;font-size:12px;z-index:2000;opacity:0;transition:opacity .3s;pointer-events:none;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
+}
+
+document.getElementById('ctx-copy').addEventListener('click', function() {
+  if (!_ctxId) return;
+  _clip = deepCopy(find(_ctxId, ROOT));
+  toast('Copied: ' + _clip.name); hideCtxMenu();
+});
+
+document.getElementById('ctx-paste-child').addEventListener('click', function() {
+  if (!_clip || !_ctxId) return;
+  const parent = find(_ctxId, ROOT); if (!parent || LEAF_TYPES.has(parent.type)) return;
+  const node = deepCopy(_clip); initPSt(node);
+  parent.children.push(node); pSt[_ctxId] = true; selId = node.id;
+  rerender(); hideCtxMenu(); toast('Pasted into ' + parent.name);
+});
+
+document.getElementById('ctx-paste-sibling').addEventListener('click', function() {
+  if (!_clip || !_ctxId) return;
+  const parent = findParent(_ctxId, ROOT, null); if (!parent) return;
+  const idx = parent.children.findIndex(c => c.id === _ctxId);
+  const node = deepCopy(_clip); initPSt(node);
+  parent.children.splice(idx + 1, 0, node);
+  selId = node.id; rerender(); hideCtxMenu(); toast('Pasted as sibling');
+});
+
+document.getElementById('ctx-rename').addEventListener('click', function() {
+  hideCtxMenu();
+  if (!_ctxId) return;
+  const n = find(_ctxId, ROOT);
+  if (n) {
+    const newName = prompt('Rename node:', n.name);
+    if (newName !== null && newName.trim()) {
+      n.name = newName.trim(); rerender();
+    }
+  }
+});
+
+document.getElementById('ctx-delete').addEventListener('click', function() {
+  hideCtxMenu();
+  if (!_ctxId || _ctxId === ROOT.id) return;
+  const parent = findParent(_ctxId, ROOT, null);
+  if (parent) {
+    const idx = parent.children.findIndex(c => c.id === _ctxId);
+    if (idx !== -1) {
+      parent.children.splice(idx, 1);
+      if (selId === _ctxId) selId = null;
+      rerender();
+      toast('Deleted');
+    }
+  }
+});
+
+document.addEventListener('click', function(ev) {
+  if (!ev.target.closest('#ctx-menu')) hideCtxMenu();
+});
+
+/* ─── PNG Export ─────────────────────────────────────────────────────────── */
+
+function exportPNG() {
+  const PAD = 14, INDENT = 20, ICON_W = 22, LINE_H = 24, TITLE_H = 32, PAD_Y = 8;
+  const FONT = '13px "Segoe UI",system-ui,sans-serif';
+  const TITLE_FONT = 'bold 12px "Segoe UI",system-ui,sans-serif';
+
+  // Collect visible rows
+  const rows = [];
+  function collect(node, depth) {
+    const children = node.children || [];
+    const isLeaf = children.length === 0;
+    rows.push({ node, depth, isLeaf, isLast: false });
+    if (!isLeaf && pSt[node.id] !== false) {
+      for (let i = 0; i < children.length; i++) {
+        collect(children[i], depth + 1);
+      }
+    }
+  }
+  collect(ROOT, 0);
+
+  // Mark isLast for each row (last visible child of its parent)
+  // Build parent mapping
+  function markLast(node) {
+    const ch = node.children || [];
+    const visibleCh = [];
+    for (const c of ch) {
+      // Find this child in rows
+      const ri = rows.findIndex(r => r.node.id === c.id);
+      if (ri !== -1) visibleCh.push(ri);
+    }
+    if (visibleCh.length > 0) {
+      rows[visibleCh[visibleCh.length - 1]].isLast = true;
+    }
+    for (const c of ch) markLast(c);
+  }
+  markLast(ROOT);
+  if (rows.length > 0) rows[0].isLast = true; // root is always "last"
+
+  // Measure max text width
+  const mCanvas = document.createElement('canvas');
+  const mCtx = mCanvas.getContext('2d');
+  mCtx.font = FONT;
+  let maxW = 0;
+  for (const r of rows) {
+    const tw = mCtx.measureText(r.node.name).width;
+    const w = PAD + r.depth * INDENT + ICON_W + tw + PAD + 10;
+    if (w > maxW) maxW = w;
+  }
+
+  const W = Math.max(Math.ceil(maxW), 320);
+  const H = TITLE_H + PAD_Y * 2 + rows.length * LINE_H;
+  const dpr = window.devicePixelRatio || 2;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  // White background
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+
+  // Title bar
+  const grad = ctx.createLinearGradient(0, 0, W, 0);
+  grad.addColorStop(0, '#0e2a52');
+  grad.addColorStop(1, '#1a3f7a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, TITLE_H);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = TITLE_FONT;
+  ctx.fillText(ROOT.name + ' \u2014 AD OU Structure', PAD, TITLE_H / 2 + 4);
+
+  // Tree connector tracking: pipes[d] = true means a vertical line continues at depth d
+  const pipes = new Array(100).fill(false);
+
+  ctx.font = FONT;
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const d = r.depth;
+    const y = TITLE_H + PAD_Y + i * LINE_H;
+    const midY = y + LINE_H / 2;
+    const iconX = PAD + d * INDENT;
+
+    // Draw tree connector lines
+    if (d > 0) {
+      ctx.strokeStyle = '#b0bdd0';
+      ctx.lineWidth = 1;
+
+      // Horizontal stub: from parent's vertical line to this node's icon
+      const cx = PAD + (d - 1) * INDENT + INDENT / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, midY);
+      ctx.lineTo(iconX - 2, midY);
+      ctx.stroke();
+
+      // Vertical line from above: draw from top of this row's area down to midY
+      // But we need to connect from the previous sibling or parent
+      // We handle this by drawing vertical continuation lines below
+    }
+
+    // Draw vertical continuation lines for all active pipe depths
+    for (let dd = 1; dd <= d; dd++) {
+      if (pipes[dd]) {
+        const cx = PAD + (dd - 1) * INDENT + INDENT / 2;
+        ctx.strokeStyle = '#b0bdd0';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx, y);
+        ctx.lineTo(cx, dd === d ? midY : y + LINE_H);
+        ctx.stroke();
+      }
+    }
+
+    // Update pipes for this row's depth
+    if (d > 0) {
+      pipes[d] = !r.isLast;
+    }
+
+    // Draw icon
+    ctx.fillStyle = '#333333';
+    ctx.font = '13px "Segoe UI Emoji","Apple Color Emoji",sans-serif';
+    const icon = getIcon(r.node.type, pSt[r.node.id] !== false);
+    ctx.fillText(icon, iconX, midY + 4);
+
+    // Draw name
+    ctx.fillStyle = '#1a1e2e';
+    ctx.font = FONT;
+    ctx.fillText(r.node.name, iconX + ICON_W, midY + 4);
+  }
+
+  // Export as PNG
+  canvas.toBlob(function(blob) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (ROOT.name || 'ad-tree') + '.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, 'image/png');
+}
+
+/* ─── Notes ─────────────────────────────────────────────────────────────── */
+
+function getPath(id) {
+  function walk(n, t, p) {
+    if (n.id === t) return p;
+    for (const c of n.children) { const r = walk(c, t, [...p, n.name]); if (r) return r; }
+    return null;
+  }
+  return (walk(ROOT, id, []) || []).join(' \u203A ');
+}
+
+function updateNotes(id) {
+  const n = id ? find(id, ROOT) : null;
+  document.getElementById('notes-empty').style.display = n ? 'none' : 'flex';
+  if (!n) document.getElementById('notes-mode-btn').style.display = 'none';
+  document.getElementById('notes-content').style.display = n ? 'flex' : 'none';
+  if (!n) return;
+  document.getElementById('notes-icon').textContent = getIcon(n.type, false);
+  document.getElementById('notes-name').textContent = n.name;
+  document.getElementById('notes-path').textContent = getPath(id);
+  document.getElementById('notes-ta').value = n.description || '';
+  document.getElementById('notes-mode-btn').style.display = '';
+  if (!_notesEdit) { document.getElementById('notes-preview').innerHTML = renderMarkdown(n.description || ''); }
+}
+
+document.getElementById('notes-ta').addEventListener('input', function() {
+  if (selId) { const n = find(selId, ROOT); if (n) n.description = this.value; }
+});
+
+/* ─── Legend ─────────────────────────────────────────────────────────────── */
+
+function toggleLegend(e) {
+  e.stopPropagation();
+  const el = document.getElementById('legend');
+  if (el.style.display === 'block') { el.style.display = 'none'; return; }
+  const rect = document.getElementById('legend-btn').getBoundingClientRect();
+  el.style.top = (rect.bottom + 6) + 'px';
+  el.style.right = (window.innerWidth - rect.right) + 'px';
+  el.style.left = 'auto';
+  el.style.display = 'block';
+}
+
+document.addEventListener('click', function(ev) {
+  if (!ev.target.closest('#legend') && !ev.target.closest('#legend-btn'))
+    document.getElementById('legend').style.display = 'none';
+});
 
 /* ─── Init ───────────────────────────────────────────────────────────────── */
 
