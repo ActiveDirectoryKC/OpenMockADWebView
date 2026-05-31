@@ -1,0 +1,195 @@
+{
+  "Name": "example.com",
+  "Type": "Domain",
+  "Description": "Default Windows Server AD",
+  "Children": [
+    {
+      "Name": "Builtin",
+      "Type": "Container",
+      "Description": "Default container for built-in accounts and groups",
+      "Children": [
+        {
+          "Name": "Administrators",
+          "Type": "Group",
+          "Description": "Members can fully administer the computer/domain",
+          "Children": []
+        },
+        {
+          "Name": "Account Operators",
+          "Type": "Group",
+          "Description": "Members can administer domain user and group accounts",
+          "Children": []
+        },
+        {
+          "Name": "Backup Operators",
+          "Type": "Group",
+          "Description": "Members can bypass file security to back up files",
+          "Children": []
+        },
+        {
+          "Name": "Guests",
+          "Type": "Group",
+          "Description": "Users granted guest access to the computer/domain",
+          "Children": []
+        },
+        {
+          "Name": "Network Configuration Operators",
+          "Type": "Group",
+          "Description": "Members can manage TCP/IP network configuration",
+          "Children": []
+        },
+        {
+          "Name": "Print Operators",
+          "Type": "Group",
+          "Description": "Members can administer printers installed on domain controllers",
+          "Children": []
+        },
+        {
+          "Name": "Remote Desktop Users",
+          "Type": "Group",
+          "Description": "Members are granted the right to log on remotely",
+          "Children": []
+        },
+        {
+          "Name": "Server Operators",
+          "Type": "Group",
+          "Description": "Members can administer domain servers",
+          "Children": []
+        },
+        {
+          "Name": "Users",
+          "Type": "Group",
+          "Description": "Prevents accidental or intentional system-wide changes",
+          "Children": []
+        }
+      ]
+    },
+    {
+      "Name": "Computers",
+      "Type": "Container",
+      "Description": "Default container for machine accounts",
+      "Children": []
+    },
+    {
+      "Name": "Domain Controllers",
+      "Type": "OU",
+      "Description": "Default OU for domain controller computer accounts",
+      "Children": []
+    },
+    {
+      "Name": "ForeignSecurityPrincipals",
+      "Type": "Container",
+      "Description": "Security principals from external trusted domains",
+      "Children": []
+    },
+    {
+      "Name": "Keys",
+      "Type": "Container",
+      "Description": "Default container for key credential objects",
+      "Children": []
+    },
+    {
+      "Name": "Managed Service Accounts",
+      "Type": "Container",
+      "Description": "Default container for managed service accounts",
+      "Children": []
+    },
+    {
+      "Name": "Users",
+      "Type": "Container",
+      "Description": "Default container for user and group objects",
+      "Children": [
+        {
+          "Name": "Administrator",
+          "Type": "User",
+          "Description": "Built-in account for administering the computer/domain",
+          "Children": []
+        },
+        {
+          "Name": "Guest",
+          "Type": "User",
+          "Description": "Built-in account for guest access",
+          "Children": []
+        },
+        {
+          "Name": "krbtgt",
+          "Type": "User",
+          "Description": "Key Distribution Center service account",
+          "Children": []
+        },
+        {
+          "Name": "Cert Publishers",
+          "Type": "Group",
+          "Description": "Members can publish certificates to Active Directory",
+          "Children": []
+        },
+        {
+          "Name": "Domain Admins",
+          "Type": "Group",
+          "Description": "Designated administrators of the domain",
+          "Children": []
+        },
+        {
+          "Name": "Domain Computers",
+          "Type": "Group",
+          "Description": "All workstations and servers joined to the domain",
+          "Children": []
+        },
+        {
+          "Name": "Domain Controllers",
+          "Type": "Group",
+          "Description": "All domain controllers in the domain",
+          "Children": []
+        },
+        {
+          "Name": "Domain Guests",
+          "Type": "Group",
+          "Description": "All domain guests",
+          "Children": []
+        },
+        {
+          "Name": "Domain Users",
+          "Type": "Group",
+          "Description": "All domain users",
+          "Children": []
+        },
+        {
+          "Name": "Enterprise Admins",
+          "Type": "Group",
+          "Description": "Designated administrators of the enterprise",
+          "Children": []
+        },
+        {
+          "Name": "Enterprise Read-only Domain Controllers",
+          "Type": "Group",
+          "Description": "RODCs in the enterprise",
+          "Children": []
+        },
+        {
+          "Name": "Group Policy Creator Owners",
+          "Type": "Group",
+          "Description": "Members can modify group policy for the domain",
+          "Children": []
+        },
+        {
+          "Name": "Protected Users",
+          "Type": "Group",
+          "Description": "Members are provided additional protections against credential theft",
+          "Children": []
+        },
+        {
+          "Name": "Read-only Domain Controllers",
+          "Type": "Group",
+          "Description": "RODCs in the domain",
+          "Children": []
+        },
+        {
+          "Name": "Schema Admins",
+          "Type": "Group",
+          "Description": "Designated administrators of the schema",
+          "Children": []
+        }
+      ]
+    }
+  ]
+}

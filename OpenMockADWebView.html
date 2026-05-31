@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OpenMockADWebView</title>
+  <title>OpenMockADWebView v0.2.0</title>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     :root{
@@ -150,16 +150,39 @@
 </head>
 <body>
 <header>
-  <span style="font-size:20px">&#x1F5C2;</span>
-  <h1>OpenMockADWebView</h1>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0" aria-hidden="true">
+    <rect x="2" y="3" width="20" height="5" rx="1.5" fill="white" fill-opacity=".88"/>
+    <rect x="2" y="10" width="20" height="5" rx="1.5" fill="white" fill-opacity=".88"/>
+    <circle cx="19" cy="5.5" r="1.1" fill="#1a3f7a"/>
+    <circle cx="19" cy="12.5" r="1.1" fill="#1a3f7a"/>
+    <line x1="12" y1="15" x2="12" y2="18.5" stroke="white" stroke-width="1.4" stroke-opacity=".75"/>
+    <line x1="6.5" y1="18.5" x2="17.5" y2="18.5" stroke="white" stroke-width="1.4" stroke-opacity=".75"/>
+    <circle cx="6.5" cy="20.5" r="1.6" fill="white" fill-opacity=".82"/>
+    <circle cx="12" cy="20.5" r="1.6" fill="white" fill-opacity=".82"/>
+    <circle cx="17.5" cy="20.5" r="1.6" fill="white" fill-opacity=".82"/>
+  </svg>
+  <div style="display:flex;flex-direction:column;gap:2px;line-height:1">
+    <h1>OpenMockADWebView</h1>
+    <span style="font-size:10px;opacity:.6;letter-spacing:.04em;font-weight:400">by Poolmanjim &middot; Tyler Jacobs</span>
+  </div>
   <div class="hsp"></div>
   <button class="hbtn" id="theme-btn" onclick="toggleThemeMenu(event)" title="Switch color theme">&#x1F3A8; Theme</button>
   <button class="hbtn" id="tmpl-btn" onclick="toggleTmplMenu(event)" title="Load a pre-built OU structure template">&#x1F4CB; Templates</button>
-  <button class="hbtn" onclick="document.getElementById('json-file-input').click()" title="Import a JSON file from disk">&#x21E7; Load JSON</button>
+  <button class="hbtn" onclick="document.getElementById('json-file-input').click()" title="Import a JSON or Markdown (.md) file">&#x21E7; Load</button>
   <button class="hbtn" id="legend-btn" onclick="toggleLegend(event)" title="View node type legend">&#x2753; Help</button>
+  <button class="hbtn" onclick="copyLink()" title="Copy a ?data= URL that encodes the current tree — works offline, no server needed">&#x1F517;&#xFE0F; Copy Link</button>
+  <button class="hbtn" onclick="exportStaticViewer()" title="Export a self-contained read-only HTML viewer for sharing">&#x1F4E4; Export Viewer</button>
   <button class="hbtn" onclick="copyJSON()" title="Copy current tree as JSON to clipboard">&#x2398; Copy JSON</button>
   <button class="hbtn" onclick="downloadJSON()" title="Download current tree as a JSON file">&#x2193; Download</button>
+  <button class="hbtn" onclick="downloadMarkdown()" title="Export as md2ADUC-compatible Markdown (.md)">&#x1F4DD; Export MD</button>
+  <a class="hbtn" id="gh-link" href="https://github.com/ActiveDirectoryKC/OpenMockADWebView" target="_blank" rel="noopener" style="display:none;text-decoration:none" title="View source on GitHub">&#x1F517;&#xFE0F; GitHub</a>
 </header>
+<div id="app-missing-banner" style="display:none;background:#8b1a1a;color:#fff;padding:10px 18px;font-size:12px;text-align:center;flex-shrink:0;border-bottom:1px solid #c03030;line-height:1.7">
+  <strong>&#x26A0;&#xFE0F; app.js could not be loaded.</strong>
+  Ensure <code style="background:rgba(255,255,255,.15);padding:1px 5px;border-radius:3px">app.js</code> is in the same folder as this HTML file.
+  &nbsp;&mdash;&nbsp;
+  <a href="https://github.com/ActiveDirectoryKC/OpenMockADWebView/releases/latest" target="_blank" rel="noopener" style="color:#ffcc88;text-decoration:underline">Download the latest release from GitHub</a>
+</div>
 
 <div class="workspace">
   <div class="panel" id="panel-left">
@@ -237,7 +260,7 @@
 </div>
 
 <div id="tmpl-menu">
-  <div class="tmpl-item" onclick="loadTemplate('windefault')">&#x1F5A5; Windows Default AD</div>
+  <div class="tmpl-item" onclick="loadTemplate('windefault')">&#x1F5A5;&#xFE0F; Windows Default AD</div>
   <div class="tmpl-item" onclick="loadTemplate('tiered')">&#x1F3E2; Tiered Admin Model</div>
   <div class="tmpl-item" onclick="loadTemplate('tieredFull')">&#x1F3E2; Tiered Admin + Builtins</div>
   <div class="tmpl-item" onclick="loadTemplate('builtinOnly')">&#x1F4E6; Builtin Only</div>
@@ -249,7 +272,7 @@
   <div class="ctx-item disabled" id="ctx-paste-child">&#x1F4E5; Paste as Child</div>
   <div class="ctx-item disabled" id="ctx-paste-sibling">&#x1F4E5; Paste as Sibling</div>
   <hr class="ctx-sep">
-  <div class="ctx-item" id="ctx-rename">&#x270E; Rename</div>
+  <div class="ctx-item" id="ctx-rename">&#x270F;&#xFE0F; Rename</div>
   <hr class="ctx-sep">
   <div class="ctx-section" id="ctx-add-section">Add Child</div>
   <div class="ctx-item ctx-add" data-type="OU">&#x1F4C1; OU</div>
@@ -258,10 +281,14 @@
   <div class="ctx-item ctx-add" data-type="Group">&#x1F465; Group</div>
   <div class="ctx-item ctx-add" data-type="Computer">&#x1F4BB; Computer</div>
   <div class="ctx-item ctx-add" data-type="GPO">&#x1F4CB; GPO</div>
-  <div class="ctx-item ctx-add" data-type="MSA">&#x2699;&#xFE0F; MSA</div>
+  <div class="ctx-item ctx-add" data-type="MSA"><span style="filter:sepia(1) hue-rotate(310deg) saturate(5) brightness(0.9)">&#x2699;&#xFE0F;</span> MSA</div>
   <div class="ctx-item ctx-add" data-type="gMSA">&#x2699;&#xFE0F; gMSA</div>
+  <div class="ctx-item ctx-add" data-type="dMSA"><span style="filter:sepia(1) hue-rotate(80deg) saturate(5) brightness(0.9)">&#x2699;&#xFE0F;</span> dMSA</div>
+  <div class="ctx-item ctx-add" data-type="Contact">&#x1FAB9; Contact</div>
+  <div class="ctx-item ctx-add" data-type="Printer">&#x1F5A8;&#xFE0F; Printer</div>
+  <div class="ctx-item ctx-add" data-type="Share">&#x1F5C4;&#xFE0F; Share</div>
   <hr class="ctx-sep">
-  <div class="ctx-item danger" id="ctx-delete">&#x1F5D1; Delete</div>
+  <div class="ctx-item danger" id="ctx-delete">&#x1F5D1;&#xFE0F; Delete</div>
 </div>
 
 <div id="legend">
@@ -275,8 +302,13 @@
   <div class="leg-row"><span class="leg-icon">&#x1F4BB;</span> Computer</div>
   <div class="leg-row"><span class="leg-icon">&#x1F4CB;</span> GPO</div>
   <hr class="leg-sep">
-  <div class="leg-row"><span class="leg-icon">&#x2699;&#xFE0F;</span> MSA</div>
-  <div class="leg-row"><span class="leg-icon">&#x2699;&#xFE0F;</span> gMSA</div>
+  <div class="leg-row"><span class="leg-icon" style="filter:sepia(1) hue-rotate(310deg) saturate(5) brightness(0.9)">&#x2699;&#xFE0F;</span> MSA &mdash; <em style="font-size:10px;color:var(--muted)">red</em></div>
+  <div class="leg-row"><span class="leg-icon">&#x2699;&#xFE0F;</span> gMSA &mdash; <em style="font-size:10px;color:var(--muted)">standard</em></div>
+  <div class="leg-row"><span class="leg-icon" style="filter:sepia(1) hue-rotate(80deg) saturate(5) brightness(0.9)">&#x2699;&#xFE0F;</span> dMSA &mdash; <em style="font-size:10px;color:var(--muted)">green, WS2025</em></div>
+  <hr class="leg-sep">
+  <div class="leg-row"><span class="leg-icon">&#x1FAB9;</span> Contact</div>
+  <div class="leg-row"><span class="leg-icon">&#x1F5A8;&#xFE0F;</span> Printer</div>
+  <div class="leg-row"><span class="leg-icon">&#x1F5C4;&#xFE0F;</span> Share</div>
 </div>
 
 <div id="type-picker">
@@ -291,13 +323,35 @@
   <div class="tp-item" data-type="GPO">&#x1F4CB; GPO</div>
   <hr class="tp-sep">
   <div class="tp-section">Service Accounts</div>
-  <div class="tp-item" data-type="MSA">&#x2699;&#xFE0F; Managed Service Account (MSA)</div>
+  <div class="tp-item" data-type="MSA"><span style="filter:sepia(1) hue-rotate(310deg) saturate(5) brightness(0.9)">&#x2699;&#xFE0F;</span> Managed Service Account (MSA)</div>
   <div class="tp-item" data-type="gMSA">&#x2699;&#xFE0F; Group Managed SA (gMSA)</div>
+  <div class="tp-item" data-type="dMSA"><span style="filter:sepia(1) hue-rotate(80deg) saturate(5) brightness(0.9)">&#x2699;&#xFE0F;</span> Delegated MSA (dMSA) <span style="font-size:10px;opacity:.6">WS2025</span></div>
+  <hr class="tp-sep">
+  <div class="tp-section">Other Objects</div>
+  <div class="tp-item" data-type="Contact">&#x1FAB9; Contact</div>
+  <div class="tp-item" data-type="Printer">&#x1F5A8;&#xFE0F; Printer</div>
+  <div class="tp-item" data-type="Share">&#x1F5C4;&#xFE0F; Share</div>
 </div>
+
 
 <div id="toast"></div>
 <div id="drag-overlay"></div>
-<input type="file" id="json-file-input" accept=".json" style="display:none" onchange="loadJSONFile(event)">
+<input type="file" id="json-file-input" accept=".json,.md" style="display:none" onchange="loadStructureFile(event)">
 <script src="app.js"></script>
+<script>
+(function () {
+  // Show GitHub link when served from GitHub Pages
+  if (window.location.hostname.endsWith('github.io')) {
+    var gl = document.getElementById('gh-link');
+    if (gl) gl.style.display = '';
+  }
+  // Show banner if app.js failed to load (loadData is the first public function defined in it)
+  if (typeof loadData === 'undefined') {
+    var b = document.getElementById('app-missing-banner');
+    if (b) b.style.display = '';
+  }
+})();
+
+</script>
 </body>
 </html>

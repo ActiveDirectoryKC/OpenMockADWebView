@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   OpenMockADWebView v11 — Full-featured AD OU simulation tool
+   OpenMockADWebView v0.2.0 — Full-featured AD OU simulation tool
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ─── Config ─────────────────────────────────────────────────────────────── */
-const LEAF_TYPES = new Set(['User','Group','Computer','GPO','MSA','gMSA']);
-const TYPE_LABELS = {OU:'OU',Container:'Container',User:'User',Group:'Group',Computer:'Computer',GPO:'GPO',MSA:'MSA',gMSA:'gMSA'};
+const LEAF_TYPES = new Set(['User','Group','Computer','GPO','MSA','gMSA','dMSA','Contact','Printer','Share']);
+const TYPE_LABELS = {OU:'OU',Container:'Container',User:'User',Group:'Group',Computer:'Computer',GPO:'GPO',MSA:'MSA',gMSA:'gMSA',dMSA:'dMSA',Contact:'Contact',Printer:'Printer',Share:'Share'};
 function isLeaf(t) { return LEAF_TYPES.has(t); }
 function getIcon(type, isOpen) {
   if (type === 'OU')        return isOpen ? '\uD83D\uDCC2' : '\uD83D\uDCC1';
@@ -14,9 +14,23 @@ function getIcon(type, isOpen) {
   if (type === 'Group')     return '\uD83D\uDC65';
   if (type === 'Computer')  return '\uD83D\uDCBB';
   if (type === 'GPO')       return '\uD83D\uDCCB';
-  if (type === 'MSA')       return '\u2699\uFE0F';
-  if (type === 'gMSA')      return '\u2699\uFE0F';
+  if (type === 'MSA')       return '\u2699\uFE0F';  // ⚙️ emoji — hue filter makes red
+  if (type === 'gMSA')      return '\u2699\uFE0F';  // ⚙️ emoji — no filter, standard gear
+  if (type === 'dMSA')      return '\u2699\uFE0F';  // ⚙️ emoji — hue filter makes green
+  if (type === 'Contact')   return '\uD83E\uDEB9';  // 🪪 ID card
+  if (type === 'Printer')   return '\uD83D\uDDA8\uFE0F';
+  if (type === 'Share')     return '\uD83D\uDDC4\uFE0F';  // 🗄️ filing cabinet — stored/shared files
   return '\uD83D\uDCC1';
+}
+
+/* Colored cogs: U+2699 (text presentation) accepts CSS color unlike the emoji form */
+function getIconFilter(type) {
+  if (type === 'MSA')  return 'sepia(1) hue-rotate(310deg) saturate(5) brightness(0.9)';
+  if (type === 'dMSA') return 'sepia(1) hue-rotate(80deg) saturate(5) brightness(0.9)';
+  return null;  // gMSA and all others: no filter
+}
+function applyIconStyle(el, type) {
+  const f = getIconFilter(type); if (f) el.style.filter = f;
 }
 
 /* ─── State ──────────────────────────────────────────────────────────────── */
@@ -129,6 +143,7 @@ function buildPNode(n, ul, isBranch, parentNode) {
   }
   const ic = document.createElement('span');
   ic.className = 'nd-icon'; ic.textContent = getIcon(n.type, hasKids && exp);
+  applyIconStyle(ic, n.type);
   row.appendChild(ic);
   const lb = document.createElement('span');
   lb.style.cssText = 'font-size:13px' + (n.type === 'Domain' ? ';font-weight:600' : '');
@@ -182,6 +197,7 @@ function buildBNode(n, ul, isBranch) {
   }
   const ic = document.createElement('span');
   ic.className = 'nd-icon'; ic.textContent = getIcon(n.type, hasKids);
+  applyIconStyle(ic, n.type);
   row.appendChild(ic);
   const nm = document.createElement('span');
   nm.className = 'bname' + (isRoot ? ' root' : ''); nm.textContent = n.name;
@@ -194,7 +210,7 @@ function buildBNode(n, ul, isBranch) {
     acts.appendChild(ba);
   }
   const br = document.createElement('button');
-  br.className = 'abtn'; br.title = 'Rename'; br.textContent = '\u270E';
+  br.className = 'abtn'; br.title = 'Rename'; br.textContent = '\u270F\uFE0F';
   br.addEventListener('click', e => { e.stopPropagation(); startRename(n.id, nm); });
   acts.appendChild(br);
   if (!isRoot) {
@@ -283,8 +299,14 @@ document.getElementById('btn-del').addEventListener('click', () => deleteSelecte
 function loadFromJSON() {
   const raw = document.getElementById('json-ta').value.trim();
   if (!raw) { toast('Paste JSON first'); return; }
-  try { loadData(JSON.parse(raw)); toast('Loaded'); }
-  catch(e) { toast('Invalid JSON: ' + e.message.split('\n')[0]); }
+  let parsed;
+  try { parsed = JSON.parse(raw); }
+  catch(e) { toast('JSON parse error: ' + e.message.split('\n')[0]); return; }
+  const errs = validateADJSON(parsed, 'root');
+  if (errs.critical.length) { showValidationErrors(errs); return; }
+  if (errs.warnings.length) showValidationErrors(errs);
+  loadData(parsed);
+  if (!errs.warnings.length) toast('Loaded');
 }
 function syncJSON() { if (ROOT) document.getElementById('json-ta').value = JSON.stringify(toJSON(ROOT), null, 2); }
 function loadData(parsed) {
@@ -470,8 +492,12 @@ function exportPNG() {
     }
     if (d > 0) pipes[d] = !r.isLast;
     ctx.font = '14px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+    ctx.save();
+    const _pf = getIconFilter(r.node.type);
+    if (_pf) ctx.filter = _pf;
     ctx.fillStyle = '#333';
     ctx.fillText(getIcon(r.node.type, pSt[r.node.id]!==false && (r.node.children||[]).length>0), iconX, midY+5);
+    ctx.restore();
     ctx.font = r.node.type === 'Domain' ? BOLD_FONT : FONT;
     ctx.fillStyle = '#1a1e2e';
     ctx.fillText(r.node.name, iconX + ICON_W, midY + 4);
@@ -484,16 +510,36 @@ function exportPNG() {
 }
 
 /* ─── Load JSON File ─────────────────────────────────────────────────────── */
-function loadJSONFile(event) {
+function loadStructureFile(event) {
   const file = event.target.files[0]; if (!file) return;
+  const isMarkdown = /\.md$/i.test(file.name);
   const reader = new FileReader();
   reader.onload = function(e) {
-    try { loadData(JSON.parse(e.target.result)); toast('Loaded: ' + file.name); }
-    catch(err) { toast('Invalid JSON: ' + err.message); }
+    if (isMarkdown) {
+      try {
+        const parsed = parseMd2ADUC(e.target.result);
+        if (!parsed) { toast('No AD structure found in: ' + file.name); return; }
+        const errs = validateADJSON(parsed, 'root');
+        if (errs.warnings.length) showValidationErrors(errs);
+        loadData(parsed);
+        toast('Loaded: ' + file.name);
+      } catch(err) { toast('Markdown parse error: ' + err.message.split('\n')[0]); }
+    } else {
+      let parsed;
+      try { parsed = JSON.parse(e.target.result); }
+      catch(err) { toast('JSON parse error in ' + file.name + ': ' + err.message.split('\n')[0]); event.target.value=''; return; }
+      const errs = validateADJSON(parsed, 'root');
+      if (errs.critical.length) { showValidationErrors(errs); event.target.value=''; return; }
+      if (errs.warnings.length) showValidationErrors(errs);
+      loadData(parsed);
+      toast('Loaded: ' + file.name + (errs.warnings.length ? ' (with warnings)' : ''));
+    }
   };
   reader.readAsText(file);
   event.target.value = '';
 }
+// Legacy alias kept in case anything references the old name
+function loadJSONFile(event) { loadStructureFile(event); }
 
 /* ─── Notes + Markdown ───────────────────────────────────────────────────── */
 function getPath(id) {
@@ -531,7 +577,10 @@ function updateNotes(id, source) {
   }
 
   // Populate fields
-  document.getElementById('notes-icon').textContent = getIcon(n.type, false);
+  const _ni = document.getElementById('notes-icon');
+  _ni.textContent = getIcon(n.type, false);
+  const _nif = getIconFilter(n.type);
+  _ni.style.filter = _nif || ''; _ni.style.color = '';
   document.getElementById('notes-name').textContent = n.name;
   document.getElementById('notes-path').textContent = getPath(id);
   document.getElementById('notes-ta').value = n.description || '';
@@ -675,6 +724,550 @@ function rerender() {
   document.addEventListener('mouseup', () => { if (!dragging) return; dragging = false; resizer.classList.remove('on'); overlay.classList.remove('on'); });
 })();
 
+
+
+/* ─── Export Static Viewer ───────────────────────────────────────────────── */
+// Generates a self-contained, offline-capable read-only HTML file.
+// No builder, no editing — just the tree + notes panel with full markdown support.
+function exportStaticViewer() {
+  if (!ROOT) { toast('No data to export'); return; }
+  // treeJSON is embedded inside a <script> block in the exported HTML.
+  // JSON.stringify does not escape </script>, which would break out of the script tag.
+  // Replace with the escaped form which JS will interpret identically.
+  const treeJSON = JSON.stringify(toJSON(ROOT), null, 2)
+    .replace(/<\/script>/gi, '<\\/script>');
+
+  // domainName is embedded into HTML attributes and text — HTML-escape it.
+  const _rawName   = ROOT.name || 'AD Structure';
+  const domainName = _rawName
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+  // Embed only the current expand state so the viewer opens in the same state
+  const pStExport = JSON.stringify(pSt);
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${domainName} — AD Structure Viewer</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--primary:#1a56a5;--plt:#e8f0fb;--text:#1a1e2e;--muted:#5a6890;--border:#d0d6e4;--bg:#eef1f7;--surface:#ffffff;--sel:#c6deff;}
+html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;color:var(--text);background:var(--bg);overflow:hidden;}
+header{height:48px;background:linear-gradient(90deg,#0e2a52,#1a3f7a);color:#fff;display:flex;align-items:center;padding:0 16px;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.3);flex-shrink:0;}
+header h1{font-size:14px;font-weight:600;letter-spacing:.02em;}
+.hsp{flex:1;}
+.hbtn{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid rgba(255,255,255,.28);border-radius:5px;background:rgba(255,255,255,.1);color:#fff;font-size:12px;cursor:pointer;font-family:inherit;}
+.hbtn:hover{background:rgba(255,255,255,.22);}
+.badge{font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);}
+.workspace{display:flex;height:calc(100vh - 48px - 22px);}
+.panel{display:flex;flex-direction:column;overflow:hidden;background:var(--surface);min-width:0;}
+#panel-tree{flex:1;border-right:1px solid var(--border);}
+#panel-notes{width:300px;flex-shrink:0;}
+.pnl-hdr{height:38px;padding:0 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:#f7f8fc;flex-shrink:0;}
+.pnl-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.sp{flex:1;}
+.pnl-body{flex:1;overflow:auto;padding:8px 10px;}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);font-size:11px;cursor:pointer;font-family:inherit;}
+.btn:hover{background:var(--plt);}
+ul.tree{list-style:none;padding:0;margin:0;}
+ul.tkids{list-style:none;padding-left:20px;margin:0;position:relative;border-left:1px solid #c0cce0;margin-left:7px;}
+li.tn{position:relative;}
+li.tn::before{content:'';position:absolute;left:-20px;top:11px;width:20px;height:1px;background:#c0cce0;}
+.xbtn{width:14px;height:14px;border:1px solid #a8b8cc;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;border-radius:2px;font-size:9px;padding:0;color:#445;font-family:monospace;font-weight:700;line-height:1;}
+.xgap{width:14px;flex-shrink:0;}
+.nd-icon{font-size:14px;flex-shrink:0;line-height:1;user-select:none;}
+.prow{display:flex;align-items:center;gap:4px;padding:2px 6px 2px 2px;border-radius:4px;white-space:nowrap;cursor:pointer;}
+.prow:hover{background:var(--plt);}
+.prow.sel{background:var(--sel);outline:1px solid #88b0e0;}
+.notes-hdr{height:38px;padding:0 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:#f7f8fc;flex-shrink:0;}
+.notes-icon{font-size:15px;}
+.notes-name{font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.notes-path{font-size:10px;color:var(--muted);padding:5px 12px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.notes-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;text-align:center;padding:20px;line-height:1.8;}
+#notes-preview{flex:1;overflow:auto;padding:10px 14px;font-size:13px;line-height:1.7;color:var(--text);}
+#notes-preview h1{font-size:18px;font-weight:700;margin:0 0 8px;border-bottom:1px solid var(--border);padding-bottom:4px;}
+#notes-preview h2{font-size:15px;font-weight:600;margin:12px 0 6px;}
+#notes-preview h3{font-size:13px;font-weight:600;margin:8px 0 4px;}
+#notes-preview ul,#notes-preview ol{padding-left:20px;margin:4px 0;}
+#notes-preview li{margin:2px 0;}
+#notes-preview p{margin:4px 0;}
+#notes-preview hr{border:0;border-top:1px solid var(--border);margin:10px 0;}
+#notes-preview strong{font-weight:700;}
+#notes-preview em{font-style:italic;}
+#notes-preview u{text-decoration:underline;}
+#notes-preview code{background:#f0f2f5;padding:1px 5px;border-radius:3px;font-family:Consolas,'Courier New',monospace;font-size:12px;}
+#notes-preview blockquote{border-left:3px solid var(--primary);padding:4px 12px;margin:6px 0;color:var(--muted);background:#f8f9fc;border-radius:0 4px 4px 0;}
+.statusbar{height:22px;background:#e4e8f2;border-top:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:24px;}
+.sitem{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;}
+body.dark{--primary:#5a9de8;--plt:#111e30;--text:#c0cee8;--muted:#607090;--border:#1c2d44;--bg:#080e18;--surface:#0c1520;--sel:#10264a;}
+body.dark .pnl-hdr,body.dark .notes-hdr{background:#0e1828;}
+body.dark .xbtn{background:#0c1520;border-color:#1c2d44;color:#708090;}
+body.dark ul.tkids{border-left-color:#1c2d44;}
+body.dark li.tn::before{background:#1c2d44;}
+body.dark .statusbar{background:#0a1018;border-color:#1c2d44;}
+body.dark #notes-preview code{background:#182838;}
+body.dark #notes-preview blockquote{background:#0e1828;border-color:#5a9de8;}
+</style>
+</head>
+<body>
+<header>
+  <span style="font-size:18px">&#x1F5C2;</span>
+  <h1>${domainName}</h1>
+  <span class="badge">Read-only Viewer</span>
+  <div class="hsp"></div>
+  <button class="hbtn" onclick="setAll(true)">Expand all</button>
+  <button class="hbtn" onclick="setAll(false)" style="margin-left:4px">Collapse all</button>
+  <button class="hbtn" id="theme-btn" onclick="toggleTheme()" style="margin-left:8px">&#x1F313; Dark</button>
+</header>
+<div class="workspace">
+  <div class="panel" id="panel-tree">
+    <div class="pnl-hdr">
+      <span class="pnl-title">Tree View</span>
+    </div>
+    <div class="pnl-body"><ul id="tree-ul" class="tree"></ul></div>
+  </div>
+  <div class="panel" id="panel-notes">
+    <div class="notes-hdr">
+      <span class="pnl-title">&#x1F4DD; Notes</span>
+    </div>
+    <div class="notes-empty" id="notes-empty">Click a node to<br>view its notes</div>
+    <div id="notes-content" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div class="notes-hdr" style="height:auto;padding:8px 12px;border-top:none">
+        <span class="notes-icon" id="notes-icon"></span>
+        <span class="notes-name" id="notes-name"></span>
+      </div>
+      <div class="notes-path" id="notes-path"></div>
+      <div id="notes-preview"></div>
+    </div>
+  </div>
+</div>
+<div class="statusbar">
+  <span class="sitem">&#x1F310; ${domainName}</span>
+  <span class="sitem" style="margin-left:auto;font-size:10px;opacity:.7">Generated by OpenMockADWebView &mdash; Read-only</span>
+</div>
+<script>
+const DATA = ${treeJSON};
+const PST  = ${pStExport};
+
+function getIcon(type, isOpen) {
+  if (type==='OU') return isOpen ? '\\uD83D\\uDCC2' : '\\uD83D\\uDCC1';
+  if (type==='Container') return '\\uD83D\\uDCE6';
+  if (type==='Domain')    return '\\uD83C\\uDF10';
+  if (type==='User')      return '\\uD83D\\uDC64';
+  if (type==='Group')     return '\\uD83D\\uDC65';
+  if (type==='Computer')  return '\\uD83D\\uDCBB';
+  if (type==='GPO')       return '\\uD83D\\uDCCB';
+  if (type==='MSA')       return '\\u2699\\uFE0F';
+  if (type==='gMSA')      return '\\u2699\\uFE0F';
+  if (type==='dMSA')      return '\\u2699\\uFE0F';
+  if (type==='Contact')   return '\\uD83E\\uDEB9';
+  if (type==='Printer')   return '\\uD83D\\uDDA8\\uFE0F';
+  if (type==='Share')     return '\\uD83D\\uDDC4\\uFE0F';
+  return '\\uD83D\\uDCC1';
+}
+function getIconFilter(type) {
+  if (type==='MSA')  return 'sepia(1) hue-rotate(310deg) saturate(5) brightness(0.9)';
+  if (type==='dMSA') return 'sepia(1) hue-rotate(80deg) saturate(5) brightness(0.9)';
+  return null;
+}
+
+let idMap = {}, pst = {};
+let selId = null;
+
+function hydrate(o, pid) {
+  const n = { id: o.Name + '|' + (pid||''), name: o.Name, type: o.Type||'OU', description: o.Description||'', children: [] };
+  if (n.type !== 'Domain') n.children = (o.Children||[]).map(c => hydrate(c, n.id));
+  else n.children = (o.Children||[]).map(c => hydrate(c, n.id));
+  idMap[n.id] = n;
+  // Restore expand state from original app — match by name path
+  pst[n.id] = true; // default open
+  return n;
+}
+
+function renderMarkdown(raw) {
+  if (!raw || !raw.trim()) return '<span style="color:var(--muted);font-size:12px">No notes for this node</span>';
+  const lines = raw.split('\\n');
+  const out = []; let inUl=false, inOl=false;
+  function closeLists() { if(inUl){out.push('</ul>');inUl=false;} if(inOl){out.push('</ol>');inOl=false;} }
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function fmt(s){s=esc(s);s=s.replace(/\\*\\*(.+?)\\*\\*/g,'<strong>$1</strong>');s=s.replace(/\\*(.+?)\\*/g,'<em>$1</em>');s=s.replace(/__(.+?)__/g,'<u>$1</u>');s=s.replace(/\`(.+?)\`/g,'<code>$1</code>');return s;}
+  for(const line of lines){
+    const t=line.trimStart();
+    if(t.startsWith('### ')){closeLists();out.push('<h3>'+fmt(t.slice(4))+'</h3>');continue;}
+    if(t.startsWith('## ')){ closeLists();out.push('<h2>'+fmt(t.slice(3))+'</h2>');continue;}
+    if(t.startsWith('# ')){  closeLists();out.push('<h1>'+fmt(t.slice(2))+'</h1>');continue;}
+    if(/^-{3,}$/.test(t)){closeLists();out.push('<hr>');continue;}
+    if(/^> /.test(t)){closeLists();out.push('<blockquote>'+fmt(t.slice(2))+'</blockquote>');continue;}
+    if(/^[-*] /.test(t)){if(!inUl){closeLists();out.push('<ul>');inUl=true;}out.push('<li>'+fmt(t.replace(/^[-*] /,''))+'</li>');continue;}
+    if(/^\\d+\\. /.test(t)){if(!inOl){closeLists();out.push('<ol>');inOl=true;}out.push('<li>'+fmt(t.replace(/^\\d+\\. /,''))+'</li>');continue;}
+    closeLists();
+    if(t===''){out.push('<br>');continue;}
+    out.push('<p>'+fmt(t)+'</p>');
+  }
+  closeLists();
+  return out.join('\\n');
+}
+
+function getPath(n, root) {
+  function walk(cur, target, path) {
+    if (cur === target) return path;
+    for (const c of cur.children) { const r = walk(c, target, [...path, cur.name]); if (r) return r; }
+    return null;
+  }
+  return (walk(root, n, []) || []).join(' \\u203A ');
+}
+
+function selectNode(n, root) {
+  selId = n.id;
+  document.querySelectorAll('.prow').forEach(r => r.classList.toggle('sel', r.dataset.id === n.id));
+  const empty = document.getElementById('notes-empty');
+  const content = document.getElementById('notes-content');
+  empty.style.display = 'none';
+  content.style.display = 'flex';
+  const _vni = document.getElementById('notes-icon');
+  _vni.textContent = getIcon(n.type, false);
+  const _vnf = getIconFilter(n.type);
+  _vni.style.filter = _vnf || ''; _vni.style.color = '';
+  document.getElementById('notes-name').textContent = n.name;
+  document.getElementById('notes-path').textContent = getPath(n, root);
+  document.getElementById('notes-preview').innerHTML = renderMarkdown(n.description);
+}
+
+function buildNode(n, ul, root, isBranch) {
+  const hasKids = n.children.length > 0;
+  const exp = pst[n.id] !== false;
+  const li = document.createElement('li');
+  if (isBranch) li.className = 'tn';
+  const row = document.createElement('div');
+  row.className = 'prow' + (n.id === selId ? ' sel' : '');
+  row.dataset.id = n.id;
+  row.addEventListener('click', () => selectNode(n, root));
+
+  if (hasKids) {
+    const xb = document.createElement('button');
+    xb.className = 'xbtn'; xb.textContent = exp ? '\\u2212' : '+';
+    xb.addEventListener('click', e => {
+      e.stopPropagation();
+      const nv = !(pst[n.id] !== false); pst[n.id] = nv;
+      xb.textContent = nv ? '\\u2212' : '+';
+      kul.style.display = nv ? '' : 'none';
+      ic.textContent = getIcon(n.type, nv && n.children.length > 0);
+    });
+    row.appendChild(xb);
+  } else {
+    const g = document.createElement('div'); g.className = 'xgap'; row.appendChild(g);
+  }
+
+  const ic = document.createElement('span');
+  ic.className = 'nd-icon'; ic.textContent = getIcon(n.type, hasKids && exp);
+  const _vf = getIconFilter(n.type); if (_vf) ic.style.filter = _vf;
+  row.appendChild(ic);
+
+  const lb = document.createElement('span');
+  lb.style.cssText = 'font-size:13px' + (n.type==='Domain'?';font-weight:600':'');
+  lb.textContent = n.name;
+  row.appendChild(lb);
+  li.appendChild(row);
+
+  const kul = document.createElement('ul');
+  kul.className = 'tree tkids'; kul.style.display = exp ? '' : 'none';
+  for (const c of n.children) buildNode(c, kul, root, true);
+  li.appendChild(kul); ul.appendChild(li);
+}
+
+function setAll(v) {
+  Object.keys(pst).forEach(k => pst[k] = v);
+  render();
+}
+
+let _root;
+function render() {
+  const ul = document.getElementById('tree-ul');
+  ul.innerHTML = '';
+  if (_root) buildNode(_root, ul, _root, false);
+}
+
+function toggleTheme() {
+  const isDark = document.body.classList.toggle('dark');
+  document.getElementById('theme-btn').textContent = isDark ? '\\u2600\\uFE0F Light' : '\\u1F313 Dark';
+}
+
+_root = hydrate(DATA, null);
+render();
+<\/script>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (ROOT.name || 'ad-structure') + '-viewer.html';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast('Static viewer exported: ' + a.download);
+}
+
+
+/* ─── md2ADUC Compatibility ─────────────────────────────────────────────── */
+// Format: indented unordered list with optional [type] markers at line end.
+// Compatible with md2ADUC (https://github.com/JimSycurity/md2ADUC) and the
+// AD2Markdown PowerShell export scripts.
+
+const MD2_TYPE_MAP = {
+  user: 'User', computer: 'Computer', group: 'Group',
+  policy: 'GPO', container: 'Container', contact: 'Contact',
+  printer: 'Printer', share: 'Share'
+};
+
+function parseMd2ADUC(text) {
+  const lines = text.split('\n');
+  let root = null;
+  // Stack entries: { obj: {Name,Type,Description,Children}, indent }
+  // indent is raw space count — works regardless of 2- vs 4-space convention
+  const stack = [];
+
+  for (const raw of lines) {
+    const m = raw.match(/^( *)[*\-] (.+)$/);
+    if (!m) continue;
+
+    const indent = m[1].length;
+    let name = m[2].trim();
+
+    // Extract optional [type] marker from end of name
+    const tm = name.match(/\s*\[(\w+)\]\s*$/i);
+    let type = 'OU';
+    if (tm) {
+      name = name.slice(0, name.length - tm[0].length).trim();
+      type = MD2_TYPE_MAP[tm[1].toLowerCase()] || 'OU';
+    }
+
+    const obj = { Name: name || 'Unnamed', Type: type, Description: '', Children: [] };
+
+    if (!root) {
+      obj.Type = 'Domain';  // First list item is always the domain root
+      root = obj;
+      stack.push({ obj, indent: -1 });  // sentinel indent
+      continue;
+    }
+
+    // Pop until we find the rightful parent (parent has smaller indent than current)
+    while (stack.length > 1 && stack[stack.length - 1].indent >= indent) stack.pop();
+    stack[stack.length - 1].obj.Children.push(obj);
+
+    // Non-leaf types can have children — push onto stack so they can be parents
+    if (!LEAF_TYPES.has(obj.Type)) stack.push({ obj, indent });
+  }
+
+  return root;
+}
+
+// md2ADUC marker for each of our types (for export)
+function getMd2Marker(type) {
+  switch (type) {
+    case 'User':      return 'user';
+    case 'Group':     return 'group';
+    case 'Computer':  return 'computer';
+    case 'GPO':       return 'policy';
+    case 'Container': return 'container';
+    case 'Contact':   return 'contact';
+    case 'Printer':   return 'printer';
+    case 'Share':     return 'share';
+    // MSA types export as [computer] — that's how md2ADUC and AD2Markdown handle them
+    case 'MSA':
+    case 'gMSA':
+    case 'dMSA':      return 'computer';
+    default:          return '';  // OU and Domain get no marker
+  }
+}
+
+function _buildMdLines(n, depth) {
+  const indent  = '  '.repeat(depth);
+  const marker  = getMd2Marker(n.type);
+  const lines   = [indent + '- ' + n.name + (marker ? ' [' + marker + ']' : '')];
+  for (const c of n.children) lines.push(..._buildMdLines(c, depth + 1));
+  return lines;
+}
+
+function downloadMarkdown() {
+  if (!ROOT) { toast('Nothing to export'); return; }
+  const now    = new Date();
+  const pad    = v => String(v).padStart(2, '0');
+  const date   = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate()) +
+                 ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+  const counts = countByType(ROOT, {});
+  const total  = Object.values(counts).reduce((s, v) => s + v, 0);
+  const header = [
+    '# Active Directory Structure', '',
+    'Exported from: OpenMockADWebView v0.2.0',
+    'Date: ' + date,
+    'Total Objects: ' + total, ''
+  ].join('\n');
+  const content = header + '\n' + _buildMdLines(ROOT, 0).join('\n') + '\n';
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([content], { type: 'text/markdown' })),
+    download: (ROOT.name || 'ad-structure') + '.md'
+  });
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('Exported: ' + a.download);
+}
+
+/* ─── JSON Validation ────────────────────────────────────────────────────── */
+const VALID_TYPES = new Set(['Domain','OU','Container','User','Group','Computer','GPO','MSA','gMSA']);
+
+function validateADJSON(obj, path) {
+  const errs = { critical: [], warnings: [] };
+  (function check(o, p) {
+    if (!o || typeof o !== 'object' || Array.isArray(o)) {
+      errs.critical.push(p + ': must be an object'); return;
+    }
+    if (typeof o.Name !== 'string' || !o.Name.trim())
+      errs.warnings.push(p + '.Name: missing or empty (will default to "Unnamed")');
+    if (!o.Type) {
+      errs.warnings.push(p + '.Type: missing (will default to OU)');
+    } else if (!VALID_TYPES.has(o.Type)) {
+      errs.warnings.push(p + '.Type: "' + o.Type + '" is unrecognized — node will render as OU');
+    }
+    if (o.Children !== undefined) {
+      if (!Array.isArray(o.Children)) {
+        errs.critical.push(p + '.Children: must be an array');
+      } else {
+        o.Children.forEach((c, i) => check(c, p + '.Children[' + i + ']'));
+      }
+    }
+  })(obj, path);
+
+  // Root-level structural check
+  if (!errs.critical.length) {
+    if (obj.Type && obj.Type !== 'Domain')
+      errs.warnings.push('root.Type: expected "Domain", got "' + obj.Type + '"');
+    if (!Array.isArray(obj.Children) || obj.Children.length === 0)
+      errs.warnings.push('root.Children: no children — structure will be empty');
+  }
+  return errs;
+}
+
+function showValidationErrors(errs) {
+  const all = errs.critical.concat(errs.warnings);
+  if (all.length === 0) return;
+  if (all.length === 1) { toast((errs.critical.length ? 'Error: ' : 'Warning: ') + all[0]); return; }
+  // Multi-error: use alert (modal) so all errors are visible at once
+  const prefix = errs.critical.length ? 'Load blocked — fix these errors:\n\n' : 'Loaded with warnings:\n\n';
+  alert(prefix + all.join('\n'));
+}
+
+/* ─── Query String Loading ───────────────────────────────────────────────── */
+// Supports two parameters:
+/* ─── Encoding — UTF-8 + deflate-raw compression ────────────────────────── */
+// CompressionStream (deflate-raw) is supported in Chrome 80+, Firefox 113+,
+// Safari 16.4+.  For ?data= URLs, compression typically reduces JSON by 70-80%
+// before base64 encoding — keeping links usable even for large structures.
+//
+// Fallback: if decompression fails (e.g. an old uncompressed ?data= URL or a
+// manually base64-encoded string), decodeBase64() is tried automatically.
+
+function encodeBase64(str) {
+  const bytes  = new TextEncoder().encode(str);
+  let   binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+function decodeBase64(b64) {
+  const binary = atob(b64);
+  const bytes  = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+async function compressToBase64(str) {
+  const bytes  = new TextEncoder().encode(str);
+  const cs     = new CompressionStream('deflate-raw');
+  const writer = cs.writable.getWriter();
+  writer.write(bytes);
+  writer.close();
+  const buf = await new Response(cs.readable).arrayBuffer();
+  const arr = new Uint8Array(buf);
+  let binary = '';
+  for (let i = 0; i < arr.length; i++) binary += String.fromCharCode(arr[i]);
+  return btoa(binary);
+}
+async function decompressFromBase64(b64) {
+  const binary = atob(b64);
+  const bytes  = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const ds     = new DecompressionStream('deflate-raw');
+  const writer = ds.writable.getWriter();
+  writer.write(bytes);
+  writer.close();
+  const buf = await new Response(ds.readable).arrayBuffer();
+  return new TextDecoder().decode(buf);
+}
+
+/* ─── Copy Link ──────────────────────────────────────────────────────────── */
+// Produces a compressed ?data= URL encoding the current tree.
+// Works offline (file://), on GitHub Pages, or any HTTP server.
+// No companion file needed — the data travels with the URL.
+async function copyLink() {
+  if (!ROOT) { toast('Nothing to link'); return; }
+  try {
+    const b64  = await compressToBase64(JSON.stringify(toJSON(ROOT)));
+    const base = window.location.href.replace(/[?#].*$/, '');
+    const url  = base + '?data=' + b64;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(url);
+      toast('Link copied \u2014 paste into any browser to restore this view');
+    } else {
+      _copyLinkFallback(url);
+    }
+  } catch(e) {
+    toast('Could not generate link: ' + e.message);
+  }
+}
+function _copyLinkFallback(url) {
+  try {
+    const inp = Object.assign(document.createElement('input'), { value: url });
+    document.body.appendChild(inp); inp.select(); document.execCommand('copy');
+    document.body.removeChild(inp);
+    toast('Link copied \u2014 paste into any browser to restore this view');
+  } catch(e) {
+    prompt('Copy this link to restore this view in any browser:', url);
+  }
+}
+
+/* ─── ?data= URL Loading ─────────────────────────────────────────────────── */
+// ?data= is the only URL loading mechanism.  Generated by the Copy Link button.
+// Compressed (deflate-raw + base64) by default; falls back to plain base64 for
+// any URL generated by an older version or created manually.
+function initQueryString() {
+  let params;
+  try { params = new URLSearchParams(window.location.search); }
+  catch(e) { return; }
+
+  const dataParam = params.get('data');
+  if (!dataParam) return;
+
+  // Try decompression first; fall back to plain base64 for old URLs
+  decompressFromBase64(dataParam)
+    .catch(function() { return decodeBase64(dataParam); })
+    .then(function(json)   { return JSON.parse(json); })
+    .then(function(parsed) {
+      const errs = validateADJSON(parsed, 'root');
+      if (errs.critical.length) { showValidationErrors(errs); return; }
+      if (errs.warnings.length) showValidationErrors(errs);
+      loadData(parsed);
+      toast('Loaded from link');
+    })
+    .catch(function(e) {
+      toast('Link data error: ' + e.message.split('\n')[0]);
+    });
+}
+
 /* ─── Init ───────────────────────────────────────────────────────────────── */
 (function() { try { const t = localStorage.getItem('omadwv-theme'); if (t) document.body.className = t; } catch(e) {} })();
 loadData(JSON.parse(JSON.stringify(TMPL_TIERED)));
+initQueryString();
+

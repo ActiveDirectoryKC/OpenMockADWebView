@@ -1,68 +1,207 @@
 # OpenMockADWebView
-For generating AD Layouts and visualizing AD structure from JSON for mocking and testing. 
-Inspired by the following. 
-- [MockAD](https://github.com/shokkadev/MockAD-Release) by [shokkadev](https://github.com/shokkadev).
-- [md2ADUC](https://github.com/JimSycurity/md2ADUC) by [JimSycurity](https://github.com/JimSycurity).
 
-This tool is an HTML, CSS, and Javascript-based tool that can be run locally or via a static webpage to help simulate, visulaize, and mock-up Active Directory (AD) environments. Creating OUs and groups, etc. is slow and tedious. This is intended to make it a little faster. 
+For generating AD layouts and visualizing AD structure from JSON for mocking and testing.
 
-> **Disclaimer:** This tool is based off MockAD and AI assistance was used to create the tool.
+Inspired by the following:
+- [MockAD](https://github.com/shokkadev/MockAD-Release) by [shokkadev](https://github.com/shokkadev)
+- [md2ADUC](https://github.com/JimSycurity/md2ADUC) by [JimSycurity](https://github.com/JimSycurity)
+
+This tool is an HTML, CSS, and JavaScript-based tool that can be run locally or via a static webpage to help simulate, visualize, and mock-up Active Directory (AD) environments. Creating OUs and objects manually is slow and tedious. This is intended to make it a little faster.
+
+> **Disclaimer:** This tool was inspired by MockAD. AI assistance was used in development.
 > Please review any outputs and log issues for anything not working as expected.
 
 ---
 
-# Getting Started 
-## How to Use the Tool
-There are two options. 
+## Quick Start
 
-### Option 1 - Github Hosted Web View
-Just connect to the following link and you'll have it displayed in your browser. It is hosted on GitHub and it is a pretty boring HTML page in the sense that nothing is gathered or retained. Everything happens client-side. 
+Open the hosted tool:
 
-- [OpenMockADWebView Public Site](https://activedirectorykc.github.io/OpenMockADWebView)
+👉 [https://activedirectorykc.github.io/OpenMockADWebView/](https://activedirectorykc.github.io/OpenMockADWebView/)
 
-### Option 2 - Download and Run
-Download the latest release / main and launch the web page manually. 
+Or [download the latest release](https://github.com/ActiveDirectoryKC/OpenMockADWebView/releases/) and open `OpenMockADWebView.html` directly in your browser.
 
-- [Releases](https://github.com/ActiveDirectoryKC/OpenMockADWebView/releases/)
-
-## Importing JSON Files
-You can import it two ways. 
-
-### From the "Load JSON" Button
-1. In the top banner find the "Load JSON" button. Click it.
-2. Select the appropriate JSON file on your system and upload it.
-3. The Tree view should refresh automatically with the new data.
-
-### From The Builder
-1. In the center pane, click "{} JSON". This displays the structure in JSON
-2. Past in the JSON you wish to use.
-3. Click "Load JSON" button. Click it.
-4. The Tree View should refresh accordingly.
-
+### Requirements
+- A modern browser with JavaScript enabled
+- `app.js` must be in the same folder as `OpenMockADWebView.html` (for local use)
 
 ---
 
-# More Details
-## Origins
-I like MockAD and this was and is not intended to steal any thunder from that work. However, when trying to use MockAD in May 2026, I ran into weird issues with how the Edge Webview rendered that made MockAD kind hard to work with. There were scaling issues in the applications. Also, MockAD is closed source and generated warnings due to being unsigned code.
+## File Structure
 
-MockAD gave me really good JSON for an environment. My plan was to to pop it into Claude and have Claude turn it into a quick webpage so I could take a screenshot to send along. Well, Claude overdid it and gave me something that already rivaled MockAD's functions in one go. I decided to push it further. 
+```
+OpenMockADWebView.html   Main application
+app.js                   Required — core logic (must be alongside the HTML)
+index.html               Redirect entry (GitHub Pages)
+```
+
+---
+
+## Browser Compatibility
+
+### Supported
+- Chrome, Brave, Edge (personal), Firefox
+
+### Edge in Enterprise Environments
+
+Corporate security policy may block JavaScript execution or external script loading, causing the UI to load but buttons to do nothing. Symptoms include `ERR_BLOCKED_BY_CLIENT` or completely unresponsive controls.
+
+**Fixes:**
+- Switch to Chrome or Firefox
+- Use Edge InPrivate mode
+- Disable browser extensions (AdBlock, Defender extensions)
+- If the issue is the filename, rename `app.js` to something like `omadwv-core.js` and update the `<script src>` reference in the HTML accordingly
+
+---
+
+## Importing Structure
+
+### From the Load Button (file picker)
+Click **⇧ Load** in the header. Accepts `.json` and `.md` files.
+
+### From the JSON Tab
+1. Click **{} JSON** in the right pane.
+2. Paste your JSON.
+3. Click **↑ Load JSON**.
+
+### From a Link (?data=)
+The **Copy Link** button generates a self-contained URL that encodes the current tree. Paste it into any browser — no server, no companion file, no setup required.
+
+The URL uses compressed base64 encoding (deflate-raw) to keep link length manageable even for larger structures. Links generated by older versions or created manually with plain base64 are still supported.
+
+```
+# Example (abbreviated)
+OpenMockADWebView.html?data=7Vxbc6M4Fv4r...
+```
+
+**This works offline.** If you open the HTML from disk and click a `?data=` link, it loads immediately without needing a server.
+
+---
+
+## Exporting
+
+| Button | Output | Notes |
+|---|---|---|
+| ⇧ Load | — | Accepts `.json` or `.md` |
+| ↓ Download | `.json` | MockAD-compatible JSON |
+| 📝 Export MD | `.md` | md2ADUC-compatible Markdown |
+| 📤 Export Viewer | `.html` | Self-contained read-only viewer |
+| 🔗 Copy Link | Clipboard | Compressed `?data=` URL |
+| ⊕ Copy JSON | Clipboard | Raw JSON |
+| 📷 PNG | `.png` | Tree view snapshot |
+
+### Static Viewer
+**Export Viewer** generates a single self-contained HTML file — no `app.js`, no internet required. The tree, notes, and markdown rendering are all embedded. Drop it into an email, SharePoint, or internal wiki. The recipient opens it in any browser, read-only.
+
+### Markdown Export
+**Export MD** produces a file compatible with [md2ADUC](https://github.com/JimSycurity/md2ADUC) and the AD2Markdown PowerShell scripts. MSA, gMSA, and dMSA all export as `[computer]` — that is how the md2ADUC format handles them.
+
+---
 
 ## Features
-- JSON Import / Export. Imports the same JSON format that MockAD uses and exports it too!
-- Browser-based. Download it local. It doesn't reach out, and it doesn't phone home, it is entirely client side.
-- Export to PNG - Rather than having to do stuff to make this work, just click "Export to PNG" and you have a version of your structure as a picture.
-- Prebuilt-environments - Use one of the pre-built buttons to generate the environment based off my designs. You can edit them and make your own!
-- Built-in Simple Markdown Support for notes - MockAD had this, I just continued it.
-  - Headers supported
-  - Bold, Italics, Underline
-  - Lists.
-  - More can be added.
-- Limited external dependencies - No external fonts, etc. Just Unicode and a web page.
-- Open Source. All of it is here and free to use.
+
+- **JSON import / export.** Compatible with MockAD's JSON format.
+- **Markdown import / export.** Compatible with md2ADUC and AD2Markdown PowerShell scripts.
+- **Shareable links.** Copy Link generates a compressed `?data=` URL. Works offline.
+- **JSON validation.** Schema validation with clear error messages on malformed imports.
+- **Browser-based.** No install, no phone-home, fully client-side.
+- **PNG export.** One-click snapshot of the current tree.
+- **Static viewer export.** Self-contained read-only HTML for sharing.
+- **Pre-built templates.** Windows Server default AD, tiered admin model (with and without builtins), builtins-only, and blank domain.
+- **Toggle builtins.** Show or hide default Windows AD objects without removing them from the data.
+- **Builder.** Add, rename, delete, copy, and paste nodes.
+- **Notes with markdown.** Per-node notes with headers, bold, italic, underline, lists, blockquotes, and inline code. Click a node in the preview to see rendered notes; click in the builder to edit.
+- **Themes.** Default, Dark, Forest, and High Contrast — preference saved between sessions.
+- **No external dependencies.** Unicode emoji for icons. No CDN fonts, no external libraries.
+- **Open source.** MIT license.
+
+---
+
+## Supported Node Types
+
+| Type | Icon | Notes |
+|---|---|---|
+| Domain | 🌐 | Root node — one per tree |
+| Organizational Unit | 📁 📂 | Primary container type |
+| Container | 📦 | Default AD containers (Builtin, Users, etc.) |
+| User | 👤 | |
+| Group | 👥 | |
+| Computer | 💻 | |
+| GPO | 📋 | Exported as `[policy]` in Markdown |
+| MSA | ⚙ (amber) | Managed Service Account |
+| gMSA | ⚙ (slate) | Group Managed Service Account |
+| dMSA | ⚙ (blue) | Delegated MSA — Windows Server 2025 |
+| Contact | 🔗 | |
+| Printer | 🖨 | |
+| Share | 🗄️ | |
+
+---
+
+## JSON Format
+
+The tool uses MockAD's JSON format. Each node is an object with the following fields:
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `Name` | string | Yes | Display name of the node |
+| `Type` | string | Yes | One of the types in the table above |
+| `Description` | string | No | Freeform text — supports markdown |
+| `Children` | array | Yes (may be empty) | Child nodes |
+
+The root object must have `"Type": "Domain"`. Leaf types (User, Group, Computer, GPO, MSA, gMSA, dMSA, Contact, Printer, Share) may have empty `Children` arrays — they will not render with child nodes regardless.
+
+---
+
+## Markdown Format
+
+Compatible with [md2ADUC](https://github.com/JimSycurity/md2ADUC) and the [AD2Markdown PowerShell scripts](./AD2Markdown/README.md).
+
+- Unordered list with `- ` or `* ` markers
+- Two-space indentation per level
+- Object type in brackets at end of line: `[user]`, `[computer]`, `[group]`, `[policy]`, `[container]`, `[contact]`, `[printer]`, `[share]`
+- No bracket = OU (or Domain for the root item)
+
+```markdown
+- contoso.com
+  - Domain Controllers
+    - DC01 [computer]
+    - DC02 [computer]
+  - Corporate
+    - Users
+      - Jane Doe [user]
+    - Groups
+      - IT Admins [group]
+    - Service Accounts
+      - svc-backup [computer]
+```
+
+Header blocks above the list (metadata lines, blank lines, `#` headings) are skipped automatically on import.
+
+---
+
+## Origins
+
+I like MockAD and this is not intended to steal thunder from that work. When trying to use MockAD in May 2026, I ran into rendering issues with Edge WebView that made it difficult to use reliably. MockAD is also closed-source.
+
+My initial plan was to drop MockAD's JSON output into Claude and get a quick screenshot-ready webpage. Claude overdid it. I decided to push it further.
+
+---
 
 ## Roadmap
-All good projects need a plan. I hope to continue this down the road. 
 
-- Tagging of objects using mark down. This is less about notes and more about identifying what each OU is for. The goal here is to allow for other scripts to feed off this information in a very programmatic way.
-- Script generation. We already have the structure. Can we just dump out the PowerShell needed to make it a thing? 
+| Version | Status | Feature |
+|---|---|---|
+| v0.1.1 | ✅ | URL query string loading + JSON validation |
+| v0.1.3 | ✅ | Static viewer export |
+| v0.1.4 | ✅ | GitHub link, attribution, app.js detection, security fixes |
+| v0.2.0 | ✅ | md2ADUC compatibility, new types (dMSA, Contact, Printer, Share), colored MSA icons, Copy Link with compression |
+| Future | | Object tagging for BadBlood / tooling integration |
+| Future | | PowerShell build script generation from tree |
+
+---
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
+
+© Tyler Jacobs | Poolmanjim

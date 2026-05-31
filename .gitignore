@@ -1,0 +1,63 @@
+# ============================================================
+# PowerShell Project .gitignore
+# ============================================================
+
+# --- Directories: Excluded ---
+archive/
+
+# --- OS: Windows ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# --- OS: macOS ---
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# --- Editor: VS Code ---
+.vscode/
+*.code-workspace
+
+# --- Editor: Visual Studio ---
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docview
+
+# --- Editor: JetBrains / Rider ---
+.idea/
+*.iml
+
+# --- PowerShell ---
+# Pester test results
+TestResults.xml
+*.TestResults.xml
+
+# PSScriptAnalyzer output
+ScriptAnalyzer.log
+
+# Module build output
+Release/
+Build/
+out/
+
+# Credential / secret files - never commit these
+*.cred
+*.credential
+secrets.ps1
+secrets.json
+
+# --- Logs ---
+*.log
+*.log.*
+logs/
+
+# --- Temp / Misc ---
+*.tmp
+*.temp
+~$*

@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>example.com — AD Structure Viewer</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--primary:#1a56a5;--plt:#e8f0fb;--text:#1a1e2e;--muted:#5a6890;--border:#d0d6e4;--bg:#eef1f7;--surface:#ffffff;--sel:#c6deff;}
+html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;color:var(--text);background:var(--bg);overflow:hidden;}
+header{height:48px;background:linear-gradient(90deg,#0e2a52,#1a3f7a);color:#fff;display:flex;align-items:center;padding:0 16px;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.3);flex-shrink:0;}
+header h1{font-size:14px;font-weight:600;letter-spacing:.02em;}
+.hsp{flex:1;}
+.hbtn{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid rgba(255,255,255,.28);border-radius:5px;background:rgba(255,255,255,.1);color:#fff;font-size:12px;cursor:pointer;font-family:inherit;}
+.hbtn:hover{background:rgba(255,255,255,.22);}
+.badge{font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);}
+.workspace{display:flex;height:calc(100vh - 48px - 22px);}
+.panel{display:flex;flex-direction:column;overflow:hidden;background:var(--surface);min-width:0;}
+#panel-tree{flex:1;border-right:1px solid var(--border);}
+#panel-notes{width:300px;flex-shrink:0;}
+.pnl-hdr{height:38px;padding:0 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:#f7f8fc;flex-shrink:0;}
+.pnl-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.sp{flex:1;}
+.pnl-body{flex:1;overflow:auto;padding:8px 10px;}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);font-size:11px;cursor:pointer;font-family:inherit;}
+.btn:hover{background:var(--plt);}
+ul.tree{list-style:none;padding:0;margin:0;}
+ul.tkids{list-style:none;padding-left:20px;margin:0;position:relative;border-left:1px solid #c0cce0;margin-left:7px;}
+li.tn{position:relative;}
+li.tn::before{content:'';position:absolute;left:-20px;top:11px;width:20px;height:1px;background:#c0cce0;}
+.xbtn{width:14px;height:14px;border:1px solid #a8b8cc;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;border-radius:2px;font-size:9px;padding:0;color:#445;font-family:monospace;font-weight:700;line-height:1;}
+.xgap{width:14px;flex-shrink:0;}
+.nd-icon{font-size:14px;flex-shrink:0;line-height:1;user-select:none;}
+.prow{display:flex;align-items:center;gap:4px;padding:2px 6px 2px 2px;border-radius:4px;white-space:nowrap;cursor:pointer;}
+.prow:hover{background:var(--plt);}
+.prow.sel{background:var(--sel);outline:1px solid #88b0e0;}
+.notes-hdr{height:38px;padding:0 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:#f7f8fc;flex-shrink:0;}
+.notes-icon{font-size:15px;}
+.notes-name{font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.notes-path{font-size:10px;color:var(--muted);padding:5px 12px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.notes-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;text-align:center;padding:20px;line-height:1.8;}
+#notes-preview{flex:1;overflow:auto;padding:10px 14px;font-size:13px;line-height:1.7;color:var(--text);}
+#notes-preview h1{font-size:18px;font-weight:700;margin:0 0 8px;border-bottom:1px solid var(--border);padding-bottom:4px;}
+#notes-preview h2{font-size:15px;font-weight:600;margin:12px 0 6px;}
+#notes-preview h3{font-size:13px;font-weight:600;margin:8px 0 4px;}
+#notes-preview ul,#notes-preview ol{padding-left:20px;margin:4px 0;}
+#notes-preview li{margin:2px 0;}
+#notes-preview p{margin:4px 0;}
+#notes-preview hr{border:0;border-top:1px solid var(--border);margin:10px 0;}
+#notes-preview strong{font-weight:700;}
+#notes-preview em{font-style:italic;}
+#notes-preview u{text-decoration:underline;}
+#notes-preview code{background:#f0f2f5;padding:1px 5px;border-radius:3px;font-family:Consolas,'Courier New',monospace;font-size:12px;}
+#notes-preview blockquote{border-left:3px solid var(--primary);padding:4px 12px;margin:6px 0;color:var(--muted);background:#f8f9fc;border-radius:0 4px 4px 0;}
+.statusbar{height:22px;background:#e4e8f2;border-top:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:24px;}
+.sitem{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;}
+body.dark{--primary:#5a9de8;--plt:#111e30;--text:#c0cee8;--muted:#607090;--border:#1c2d44;--bg:#080e18;--surface:#0c1520;--sel:#10264a;}
+body.dark .pnl-hdr,body.dark .notes-hdr{background:#0e1828;}
+body.dark .xbtn{background:#0c1520;border-color:#1c2d44;color:#708090;}
+body.dark ul.tkids{border-left-color:#1c2d44;}
+body.dark li.tn::before{background:#1c2d44;}
+body.dark .statusbar{background:#0a1018;border-color:#1c2d44;}
+body.dark #notes-preview code{background:#182838;}
+body.dark #notes-preview blockquote{background:#0e1828;border-color:#5a9de8;}
+</style>
+</head>
+<body>
+<header>
+  <span style="font-size:18px">&#x1F5C2;</span>
+  <h1>example.com</h1>
+  <span class="badge">Read-only Viewer</span>
+  <div class="hsp"></div>
+  <button class="hbtn" onclick="setAll(true)">Expand all</button>
+  <button class="hbtn" onclick="setAll(false)" style="margin-left:4px">Collapse all</button>
+  <button class="hbtn" id="theme-btn" onclick="toggleTheme()" style="margin-left:8px">&#x1F313; Dark</button>
+</header>
+<div class="workspace">
+  <div class="panel" id="panel-tree">
+    <div class="pnl-hdr">
+      <span class="pnl-title">Tree View</span>
+    </div>
+    <div class="pnl-body"><ul id="tree-ul" class="tree"></ul></div>
+  </div>
+  <div class="panel" id="panel-notes">
+    <div class="notes-hdr">
+      <span class="pnl-title">&#x1F4DD; Notes</span>
+    </div>
+    <div class="notes-empty" id="notes-empty">Click a node to<br>view its notes</div>
+    <div id="notes-content" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div class="notes-hdr" style="height:auto;padding:8px 12px;border-top:none">
+        <span class="notes-icon" id="notes-icon"></span>
+        <span class="notes-name" id="notes-name"></span>
+      </div>
+      <div class="notes-path" id="notes-path"></div>
+      <div id="notes-preview"></div>
+    </div>
+  </div>
+</div>
+<div class="statusbar">
+  <span class="sitem">&#x1F310; example.com</span>
+  <span class="sitem" style="margin-left:auto;font-size:10px;opacity:.7">Generated by OpenMockADWebView &mdash; Read-only</span>
+</div>
+<script>
+const DATA = {
+  "Name": "example.com",
+  "Type": "Domain",
+  "Description": "Tiered admin model with default objects",
+  "Children": [
+    {
+      "Name": "Admin",
+      "Type": "OU",
+      "Description": "",
+      "Children": [
+        {
+          "Name": "Tier 0",
+          "Type": "OU",
+          "Description": "",
+          "Children": [
+            {
+              "Name": "T0 Groups",
+              "Type": "OU",
+              "Description": "",
+              "Children": [
+                {
+                  "Name": "T0 Resource Groups",
+                  "Type": "OU",
+                  "Description": "",
+                  "Children": []
+                },
+                {
+                  "Name": "T0 Role Groups",
+                  "Type": "OU",
+                  "Description": "",
+                  "Children": []
+                }
+              ]
+            },
+            {
+              "Name": "T0 PAWs",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "T0 Servers",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "T0 Service Accounts",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "T0 Users",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            }
+          ]
+        },
+        {
+          "Name": "Tier 1",
+          "Type": "OU",
+          "Description": "",
+          "Children": [
+            {
+              "Name": "T1 Computers",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "T1 Groups",
+              "Type": "OU",
+              "Description": "",
+              "Children": [
+                {
+                  "Name": "T1 Resource Groups",
+                  "Type": "OU",
+                  "Description": "",
+                  "Children": []
+                },
+                {
+                  "Name": "T1 Role Groups",
+                  "Type": "OU",
+                  "Description": "",
+                  "Children": []
+                }
+              ]
+            },
+            {
+              "Name": "T1 Servers",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "T1 Service Accounts",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "Users",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            }
+          ]
+        },
+        {
+          "Name": "Tier 2",
+          "Type": "OU",
+          "Description": "",
+          "Children": [
+            {
+              "Name": "T2 Computers",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "T2 Groups",
+              "Type": "OU",
+              "Description": "",
+              "Children": [
+                {
+                  "Name": "T2 Resource Groups",
+                  "Type": "OU",
+                  "Description": "",
+                  "Children": []
+                },
+                {
+                  "Name": "T2 Role Groups",
+                  "Type": "OU",
+                  "Description": "",
+                  "Children": []
+                }
+              ]
+            },
+            {
+              "Name": "T2 Servers",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "T2 Service Accounts",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "T2 Users",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "Corporate",
+      "Type": "OU",
+      "Description": "",
+      "Children": [
+        {
+          "Name": "Bind Accounts",
+          "Type": "OU",
+          "Description": "",
+          "Children": []
+        },
+        {
+          "Name": "Computers",
+          "Type": "OU",
+          "Description": "",
+          "Children": []
+        },
+        {
+          "Name": "Distribution Lists",
+          "Type": "OU",
+          "Description": "",
+          "Children": []
+        },
+        {
+          "Name": "Groups",
+          "Type": "OU",
+          "Description": "",
+          "Children": [
+            {
+              "Name": "Resource Groups",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "Role Groups",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            }
+          ]
+        },
+        {
+          "Name": "Users",
+          "Type": "OU",
+          "Description": "",
+          "Children": [
+            {
+              "Name": "Africa",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "Asia",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "EU",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "US",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "Domain Controllers",
+      "Type": "OU",
+      "Description": "",
+      "Children": []
+    },
+    {
+      "Name": "Builtin",
+      "Type": "Container",
+      "Description": "Default container for built-in accounts and groups",
+      "Children": [
+        {
+          "Name": "Administrators",
+          "Type": "Group",
+          "Description": "Members can fully administer the computer/domain",
+          "Children": []
+        },
+        {
+          "Name": "Account Operators",
+          "Type": "Group",
+          "Description": "Members can administer domain user and group accounts",
+          "Children": []
+        },
+        {
+          "Name": "Backup Operators",
+          "Type": "Group",
+          "Description": "Members can bypass file security to back up files",
+          "Children": []
+        },
+        {
+          "Name": "Guests",
+          "Type": "Group",
+          "Description": "Users granted guest access to the computer/domain",
+          "Children": []
+        },
+        {
+          "Name": "Network Configuration Operators",
+          "Type": "Group",
+          "Description": "Members can manage TCP/IP network configuration",
+          "Children": []
+        },
+        {
+          "Name": "Print Operators",
+          "Type": "Group",
+          "Description": "Members can administer printers installed on domain controllers",
+          "Children": []
+        },
+        {
+          "Name": "Remote Desktop Users",
+          "Type": "Group",
+          "Description": "Members are granted the right to log on remotely",
+          "Children": []
+        },
+        {
+          "Name": "Server Operators",
+          "Type": "Group",
+          "Description": "Members can administer domain servers",
+          "Children": []
+        },
+        {
+          "Name": "Users",
+          "Type": "Group",
+          "Description": "Prevents accidental or intentional system-wide changes",
+          "Children": []
+        }
+      ]
+    },
+    {
+      "Name": "Computers",
+      "Type": "Container",
+      "Description": "Default container for machine accounts",
+      "Children": []
+    },
+    {
+      "Name": "Domain Controllers",
+      "Type": "OU",
+      "Description": "Default OU for domain controller computer accounts",
+      "Children": []
+    },
+    {
+      "Name": "ForeignSecurityPrincipals",
+      "Type": "Container",
+      "Description": "Security principals from external trusted domains",
+      "Children": []
+    },
+    {
+      "Name": "Keys",
+      "Type": "Container",
+      "Description": "Default container for key credential objects",
+      "Children": []
+    },
+    {
+      "Name": "Managed Service Accounts",
+      "Type": "Container",
+      "Description": "Default container for managed service accounts",
+      "Children": []
+    },
+    {
+      "Name": "Users",
+      "Type": "Container",
+      "Description": "Default container for user and group objects",
+      "Children": [
+        {
+          "Name": "Administrator",
+          "Type": "User",
+          "Description": "Built-in account for administering the computer/domain",
+          "Children": []
+        },
+        {
+          "Name": "Guest",
+          "Type": "User",
+          "Description": "Built-in account for guest access",
+          "Children": []
+        },
+        {
+          "Name": "krbtgt",
+          "Type": "User",
+          "Description": "Key Distribution Center service account",
+          "Children": []
+        },
+        {
+          "Name": "Cert Publishers",
+          "Type": "Group",
+          "Description": "Members can publish certificates to Active Directory",
+          "Children": []
+        },
+        {
+          "Name": "Domain Admins",
+          "Type": "Group",
+          "Description": "Designated administrators of the domain",
+          "Children": []
+        },
+        {
+          "Name": "Domain Computers",
+          "Type": "Group",
+          "Description": "All workstations and servers joined to the domain",
+          "Children": []
+        },
+        {
+          "Name": "Domain Controllers",
+          "Type": "Group",
+          "Description": "All domain controllers in the domain",
+          "Children": []
+        },
+        {
+          "Name": "Domain Guests",
+          "Type": "Group",
+          "Description": "All domain guests",
+          "Children": []
+        },
+        {
+          "Name": "Domain Users",
+          "Type": "Group",
+          "Description": "All domain users",
+          "Children": []
+        },
+        {
+          "Name": "Enterprise Admins",
+          "Type": "Group",
+          "Description": "Designated administrators of the enterprise",
+          "Children": []
+        },
+        {
+          "Name": "Enterprise Read-only Domain Controllers",
+          "Type": "Group",
+          "Description": "RODCs in the enterprise",
+          "Children": []
+        },
+        {
+          "Name": "Group Policy Creator Owners",
+          "Type": "Group",
+          "Description": "Members can modify group policy for the domain",
+          "Children": []
+        },
+        {
+          "Name": "Protected Users",
+          "Type": "Group",
+          "Description": "Members are provided additional protections against credential theft",
+          "Children": []
+        },
+        {
+          "Name": "Read-only Domain Controllers",
+          "Type": "Group",
+          "Description": "RODCs in the domain",
+          "Children": []
+        },
+        {
+          "Name": "Schema Admins",
+          "Type": "Group",
+          "Description": "Designated administrators of the schema",
+          "Children": []
+        }
+      ]
+    }
+  ]
+};
+const PST  = {"n0":true,"n1":true,"n2":true,"n3":true,"n4":true,"n5":true,"n6":true,"n7":true,"n8":true,"n9":true,"n10":true,"n11":true,"n12":true,"n13":true,"n14":true,"n15":true,"n16":true,"n17":true,"n18":true,"n19":true,"n20":true,"n21":true,"n22":true,"n23":true,"n24":true,"n25":true,"n26":true,"n27":true,"n28":true,"n29":true,"n30":true,"n31":true,"n32":true,"n33":true,"n34":true,"n35":true,"n36":true,"n37":true,"n38":true,"n39":true,"n40":true,"n41":true,"n42":true,"n43":true,"n44":true,"n45":true,"n46":true,"n47":true,"n48":true,"n49":true,"n50":true,"n51":true,"n52":true,"n53":true,"n54":true,"n55":true,"n56":true,"n57":true,"n58":true,"n59":true,"n60":true,"n61":true,"n62":true,"n63":true,"n64":true,"n65":true,"n66":true,"n67":true,"n68":true,"n69":true,"n70":true,"n71":true,"n72":true,"n73":true,"n74":true,"n75":true,"n76":true,"n77":true,"n78":true,"n79":true,"n80":true,"n81":true,"n82":true,"n83":true,"n84":true,"n85":true,"n86":true,"n87":true,"n88":true,"n89":true,"n90":true,"n91":true,"n92":true,"n93":true,"n94":true,"n95":true,"n96":true,"n97":true,"n98":true,"n99":true,"n100":true,"n101":true,"n102":true,"n103":true,"n104":true,"n105":true,"n106":true,"n107":true,"n108":true,"n109":true,"n110":true,"n111":true,"n112":true,"n113":true,"n114":true,"n115":true,"n116":true,"n117":true,"n118":true,"n119":true,"n120":true,"n121":true,"n122":true,"n123":true,"n124":true,"n125":true,"n126":true,"n127":true,"n128":true,"n129":true,"n130":true,"n131":true,"n132":true,"n133":true,"n134":true,"n135":true,"n136":true,"n137":true,"n138":true,"n139":true,"n140":true,"n141":true,"n142":true,"n143":true,"n144":true,"n145":true,"n146":true,"n147":true,"n148":true,"n149":true,"n150":true,"n151":true,"n152":true,"n153":true,"n154":true,"n155":true,"n156":true,"n157":true,"n158":true,"n159":true,"n160":true,"n161":true,"n162":true,"n163":true,"n164":true,"n165":true,"n166":true,"n167":true,"n168":true,"n169":true,"n170":true,"n171":true,"n172":true,"n173":true,"n174":true,"n175":true,"n176":true,"n177":true,"n178":true,"n179":true,"n180":true,"n181":true,"n182":true,"n183":true,"n184":true,"n185":true,"n186":true,"n187":true,"n188":true,"n189":true,"n190":true,"n191":true,"n192":true,"n193":true};
+
+function getIcon(type, isOpen) {
+  if (type==='OU') return isOpen ? '\uD83D\uDCC2' : '\uD83D\uDCC1';
+  if (type==='Container') return '\uD83D\uDCE6';
+  if (type==='Domain')    return '\uD83C\uDF10';
+  if (type==='User')      return '\uD83D\uDC64';
+  if (type==='Group')     return '\uD83D\uDC65';
+  if (type==='Computer')  return '\uD83D\uDCBB';
+  if (type==='GPO')       return '\uD83D\uDCCB';
+  if (type==='MSA')       return '\u2699\uFE0F';
+  if (type==='gMSA')      return '\u2699\uFE0F';
+  if (type==='dMSA')      return '\u2699\uFE0F';
+  if (type==='Contact')   return '\uD83E\uDEB9';
+  if (type==='Printer')   return '\uD83D\uDDA8\uFE0F';
+  if (type==='Share')     return '\uD83D\uDDC4\uFE0F';
+  return '\uD83D\uDCC1';
+}
+function getIconFilter(type) {
+  if (type==='MSA')  return 'sepia(1) hue-rotate(310deg) saturate(5) brightness(0.9)';
+  if (type==='dMSA') return 'sepia(1) hue-rotate(80deg) saturate(5) brightness(0.9)';
+  return null;
+}
+
+let idMap = {}, pst = {};
+let selId = null;
+
+function hydrate(o, pid) {
+  const n = { id: o.Name + '|' + (pid||''), name: o.Name, type: o.Type||'OU', description: o.Description||'', children: [] };
+  if (n.type !== 'Domain') n.children = (o.Children||[]).map(c => hydrate(c, n.id));
+  else n.children = (o.Children||[]).map(c => hydrate(c, n.id));
+  idMap[n.id] = n;
+  // Restore expand state from original app — match by name path
+  pst[n.id] = true; // default open
+  return n;
+}
+
+function renderMarkdown(raw) {
+  if (!raw || !raw.trim()) return '<span style="color:var(--muted);font-size:12px">No notes for this node</span>';
+  const lines = raw.split('\n');
+  const out = []; let inUl=false, inOl=false;
+  function closeLists() { if(inUl){out.push('</ul>');inUl=false;} if(inOl){out.push('</ol>');inOl=false;} }
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function fmt(s){s=esc(s);s=s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');s=s.replace(/\*(.+?)\*/g,'<em>$1</em>');s=s.replace(/__(.+?)__/g,'<u>$1</u>');s=s.replace(/`(.+?)`/g,'<code>$1</code>');return s;}
+  for(const line of lines){
+    const t=line.trimStart();
+    if(t.startsWith('### ')){closeLists();out.push('<h3>'+fmt(t.slice(4))+'</h3>');continue;}
+    if(t.startsWith('## ')){ closeLists();out.push('<h2>'+fmt(t.slice(3))+'</h2>');continue;}
+    if(t.startsWith('# ')){  closeLists();out.push('<h1>'+fmt(t.slice(2))+'</h1>');continue;}
+    if(/^-{3,}$/.test(t)){closeLists();out.push('<hr>');continue;}
+    if(/^> /.test(t)){closeLists();out.push('<blockquote>'+fmt(t.slice(2))+'</blockquote>');continue;}
+    if(/^[-*] /.test(t)){if(!inUl){closeLists();out.push('<ul>');inUl=true;}out.push('<li>'+fmt(t.replace(/^[-*] /,''))+'</li>');continue;}
+    if(/^\d+\. /.test(t)){if(!inOl){closeLists();out.push('<ol>');inOl=true;}out.push('<li>'+fmt(t.replace(/^\d+\. /,''))+'</li>');continue;}
+    closeLists();
+    if(t===''){out.push('<br>');continue;}
+    out.push('<p>'+fmt(t)+'</p>');
+  }
+  closeLists();
+  return out.join('\n');
+}
+
+function getPath(n, root) {
+  function walk(cur, target, path) {
+    if (cur === target) return path;
+    for (const c of cur.children) { const r = walk(c, target, [...path, cur.name]); if (r) return r; }
+    return null;
+  }
+  return (walk(root, n, []) || []).join(' \u203A ');
+}
+
+function selectNode(n, root) {
+  selId = n.id;
+  document.querySelectorAll('.prow').forEach(r => r.classList.toggle('sel', r.dataset.id === n.id));
+  const empty = document.getElementById('notes-empty');
+  const content = document.getElementById('notes-content');
+  empty.style.display = 'none';
+  content.style.display = 'flex';
+  const _vni = document.getElementById('notes-icon');
+  _vni.textContent = getIcon(n.type, false);
+  const _vnf = getIconFilter(n.type);
+  _vni.style.filter = _vnf || ''; _vni.style.color = '';
+  document.getElementById('notes-name').textContent = n.name;
+  document.getElementById('notes-path').textContent = getPath(n, root);
+  document.getElementById('notes-preview').innerHTML = renderMarkdown(n.description);
+}
+
+function buildNode(n, ul, root, isBranch) {
+  const hasKids = n.children.length > 0;
+  const exp = pst[n.id] !== false;
+  const li = document.createElement('li');
+  if (isBranch) li.className = 'tn';
+  const row = document.createElement('div');
+  row.className = 'prow' + (n.id === selId ? ' sel' : '');
+  row.dataset.id = n.id;
+  row.addEventListener('click', () => selectNode(n, root));
+
+  if (hasKids) {
+    const xb = document.createElement('button');
+    xb.className = 'xbtn'; xb.textContent = exp ? '\u2212' : '+';
+    xb.addEventListener('click', e => {
+      e.stopPropagation();
+      const nv = !(pst[n.id] !== false); pst[n.id] = nv;
+      xb.textContent = nv ? '\u2212' : '+';
+      kul.style.display = nv ? '' : 'none';
+      ic.textContent = getIcon(n.type, nv && n.children.length > 0);
+    });
+    row.appendChild(xb);
+  } else {
+    const g = document.createElement('div'); g.className = 'xgap'; row.appendChild(g);
+  }
+
+  const ic = document.createElement('span');
+  ic.className = 'nd-icon'; ic.textContent = getIcon(n.type, hasKids && exp);
+  const _vf = getIconFilter(n.type); if (_vf) ic.style.filter = _vf;
+  row.appendChild(ic);
+
+  const lb = document.createElement('span');
+  lb.style.cssText = 'font-size:13px' + (n.type==='Domain'?';font-weight:600':'');
+  lb.textContent = n.name;
+  row.appendChild(lb);
+  li.appendChild(row);
+
+  const kul = document.createElement('ul');
+  kul.className = 'tree tkids'; kul.style.display = exp ? '' : 'none';
+  for (const c of n.children) buildNode(c, kul, root, true);
+  li.appendChild(kul); ul.appendChild(li);
+}
+
+function setAll(v) {
+  Object.keys(pst).forEach(k => pst[k] = v);
+  render();
+}
+
+let _root;
+function render() {
+  const ul = document.getElementById('tree-ul');
+  ul.innerHTML = '';
+  if (_root) buildNode(_root, ul, _root, false);
+}
+
+function toggleTheme() {
+  const isDark = document.body.classList.toggle('dark');
+  document.getElementById('theme-btn').textContent = isDark ? '\u2600\uFE0F Light' : '\u1F313 Dark';
+}
+
+_root = hydrate(DATA, null);
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,287 @@
+{
+  "Name": "example.com",
+  "Type": "Domain",
+  "Description": "Tiered admin model",
+  "Children": [
+    {
+      "Name": "Admin",
+      "Type": "OU",
+      "Description": "",
+      "Children": [
+        {
+          "Name": "Tier 0",
+          "Type": "OU",
+          "Description": "",
+          "Children": [
+            {
+              "Name": "T0 Groups",
+              "Type": "OU",
+              "Description": "",
+              "Children": [
+                {
+                  "Name": "T0 Resource Groups",
+                  "Type": "OU",
+                  "Description": "",
+                  "Children": []
+                },
+                {
+                  "Name": "T0 Role Groups",
+                  "Type": "OU",
+                  "Description": "",
+                  "Children": []
+                }
+              ]
+            },
+            {
+              "Name": "T0 PAWs",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "T0 Servers",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "T0 Service Accounts",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "T0 Users",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            }
+          ]
+        },
+        {
+          "Name": "Tier 1",
+          "Type": "OU",
+          "Description": "",
+          "Children": [
+            {
+              "Name": "T1 Computers",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "T1 Groups",
+              "Type": "OU",
+              "Description": "",
+              "Children": [
+                {
+                  "Name": "T1 Resource Groups",
+                  "Type": "OU",
+                  "Description": "",
+                  "Children": []
+                },
+                {
+                  "Name": "T1 Role Groups",
+                  "Type": "OU",
+                  "Description": "",
+                  "Children": []
+                }
+              ]
+            },
+            {
+              "Name": "T1 Servers",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "T1 Service Accounts",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "Users",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            }
+          ]
+        },
+        {
+          "Name": "Tier 2",
+          "Type": "OU",
+          "Description": "",
+          "Children": [
+            {
+              "Name": "T2 Computers",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "T2 Groups",
+              "Type": "OU",
+              "Description": "",
+              "Children": [
+                {
+                  "Name": "T2 Resource Groups",
+                  "Type": "OU",
+                  "Description": "",
+                  "Children": []
+                },
+                {
+                  "Name": "T2 Role Groups",
+                  "Type": "OU",
+                  "Description": "",
+                  "Children": []
+                }
+              ]
+            },
+            {
+              "Name": "T2 Servers",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "T2 Service Accounts",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "T2 Users",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "Corporate",
+      "Type": "OU",
+      "Description": "",
+      "Children": [
+        {
+          "Name": "Bind Accounts",
+          "Type": "OU",
+          "Description": "",
+          "Children": []
+        },
+        {
+          "Name": "Computers",
+          "Type": "OU",
+          "Description": "",
+          "Children": []
+        },
+        {
+          "Name": "Distribution Lists",
+          "Type": "OU",
+          "Description": "",
+          "Children": []
+        },
+        {
+          "Name": "Groups",
+          "Type": "OU",
+          "Description": "",
+          "Children": [
+            {
+              "Name": "Resource Groups",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "Role Groups",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            }
+          ]
+        },
+        {
+          "Name": "Users",
+          "Type": "OU",
+          "Description": "",
+          "Children": [
+            {
+              "Name": "Africa",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "Asia",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "EU",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            },
+            {
+              "Name": "US",
+              "Type": "OU",
+              "Description": "",
+              "Children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "Domain Controllers",
+      "Type": "OU",
+      "Description": "",
+      "Children": []
+    },
+    {
+      "Name": "Builtin",
+      "Type": "Container",
+      "Description": "Default container for built-in accounts and groups",
+      "Children": []
+    },
+    {
+      "Name": "Computers",
+      "Type": "Container",
+      "Description": "Default container for machine accounts",
+      "Children": []
+    },
+    {
+      "Name": "Domain Controllers",
+      "Type": "OU",
+      "Description": "Default OU for domain controller computer accounts",
+      "Children": []
+    },
+    {
+      "Name": "ForeignSecurityPrincipals",
+      "Type": "Container",
+      "Description": "Security principals from external trusted domains",
+      "Children": []
+    },
+    {
+      "Name": "Keys",
+      "Type": "Container",
+      "Description": "Default container for key credential objects",
+      "Children": []
+    },
+    {
+      "Name": "Managed Service Accounts",
+      "Type": "Container",
+      "Description": "Default container for managed service accounts",
+      "Children": []
+    },
+    {
+      "Name": "Users",
+      "Type": "Container",
+      "Description": "Default container for user and group objects",
+      "Children": []
+    }
+  ]
+}
