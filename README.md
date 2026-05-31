@@ -21,7 +21,7 @@ Just connect to the following link and you'll have it displayed in your browser.
 ### Option 2 - Download and Run
 Download the latest release / main and launch the web page manually. 
 
-- [Releases](https://github.com/ActiveDirectoryKC/OpenMockADWebView/releases/new)
+- [Releases](https://github.com/ActiveDirectoryKC/OpenMockADWebView/releases/)
 
 ## Importing JSON Files
 You can import it two ways. 
