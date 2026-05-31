@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AD OU Tree Builder</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/tabler-icons.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --hdr-a: #0e2a52;
+      --hdr-b: #1a3f7a;
+      --primary: #1a56a5;
+      --primary-lt: #e8f0fb;
+      --text: #1a1e2e;
+      --muted: #5a6890;
+      --border: #d0d6e4;
+      --bg: #eef1f7;
+      --surface: #ffffff;
+      --folder: #d99010;
+      --domain: #1a56a5;
+      --danger: #c03030;
+      --success: #1a7040;
+      --sel: #c6deff;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      height: 52px;
+      background: linear-gradient(90deg, var(--hdr-a), var(--hdr-b));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    header h1 { font-size: 15px; font-weight: 600; letter-spacing: 0.02em; }
+    .hsp { flex: 1; }
+    .hbtn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px;
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 5px;
+      background: rgba(255,255,255,0.1);
+      color: #fff; font-size: 12px; cursor: pointer; font-family: inherit;
+    }
+    .hbtn:hover { background: rgba(255,255,255,0.22); }
+
+    /* ── Layout ── */
+    .workspace {
+      display: flex;
+      height: calc(100vh - 52px - 24px);
+    }
+
+    /* ── Panels ── */
+    .panel {
+      display: flex; flex-direction: column;
+      overflow: hidden; background: var(--surface);
+      min-width: 0;
+    }
+    #panel-left  { width: 45%; border-right: 1px solid var(--border); }
+    #panel-right { flex: 1; }
+
+    .pnl-hdr {
+      height: 40px; padding: 0 12px;
+      display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid var(--border);
+      background: #f7f8fc; flex-shrink: 0;
+    }
+    .pnl-title {
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    .sp { flex: 1; }
+    .pnl-body { flex: 1; overflow: auto; padding: 10px 12px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px;
+      border: 1px solid var(--border); border-radius: 4px;
+      background: var(--surface); color: var(--text);
+      font-size: 11px; cursor: pointer; font-family: inherit;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--primary-lt); border-color: #a0b8e0; }
+    .btn:disabled { opacity: 0.4; pointer-events: none; }
+    .btn.primary { background: var(--primary); color: #fff; border-color: #1040a0; }
+    .btn.primary:hover { background: #1040a0; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex; border-bottom: 1px solid var(--border);
+      background: #f7f8fc; flex-shrink: 0;
+    }
+    .tab {
+      padding: 10px 16px; font-size: 12px; font-weight: 500;
+      color: var(--muted); cursor: pointer;
+      border-bottom: 2px solid transparent;
+      display: flex; align-items: center; gap: 5px;
+      margin-bottom: -1px;
+    }
+    .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab:hover:not(.active) { color: var(--text); background: rgba(0,0,0,0.03); }
+
+    /* ── Resizer ── */
+    .resizer {
+      width: 5px; cursor: col-resize;
+      background: var(--border); flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .resizer:hover, .resizer.on { background: var(--primary); }
+
+    /* ── Tree shared ── */
+    ul.tree { list-style: none; padding: 0; margin: 0; }
+    ul.tkids {
+      list-style: none;
+      padding-left: 20px; margin: 0;
+      position: relative;
+      border-left: 1px solid #c0cce0;
+      margin-left: 7px;
+    }
+    li.tn { position: relative; }
+    li.tn::before {
+      content: '';
+      position: absolute;
+      left: -20px; top: 11px;
+      width: 20px; height: 1px;
+      background: #c0cce0;
+    }
+
+    .xbtn {
+      width: 14px; height: 14px;
+      border: 1px solid #a8b8cc;
+      background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+      border-radius: 2px; font-size: 9px; padding: 0;
+      color: #445; font-family: monospace; font-weight: 700; line-height: 1;
+    }
+    .xbtn:hover { border-color: var(--primary); background: var(--primary-lt); }
+    .xgap { width: 14px; flex-shrink: 0; }
+
+    /* ── Preview rows ── */
+    .prow {
+      display: flex; align-items: center; gap: 4px;
+      padding: 2px 6px 2px 2px;
+      border-radius: 4px; white-space: nowrap; cursor: default;
+    }
+    .prow:hover { background: var(--primary-lt); }
+
+    /* ── Builder rows ── */
+    .brow {
+      display: flex; align-items: center; gap: 4px;
+      padding: 2px 4px;
+      border-radius: 4px; white-space: nowrap; cursor: default;
+    }
+    .brow:hover { background: var(--primary-lt); }
+    .brow.sel { background: var(--sel); outline: 1px solid #88b0e0; }
+
+    .bname { flex: 1; font-size: 13px; }
+    .bname.root { font-weight: 600; }
+
+    .bacts { display: none; gap: 2px; }
+    .brow:hover .bacts, .brow.sel .bacts { display: flex; }
+
+    .abtn {
+      padding: 1px 5px;
+      border: 1px solid #c8d4e4;
+      border-radius: 3px; background: #fff;
+      cursor: pointer; font-size: 10px;
+      color: var(--muted);
+      display: flex; align-items: center;
+    }
+    .abtn:hover { background: var(--primary-lt); color: var(--primary); border-color: #a0b8de; }
+    .abtn.del:hover { background: #fff0ef; color: var(--danger); border-color: #f0a0a0; }
+
+    .rinput {
+      flex: 1; font-size: 13px; font-family: inherit;
+      border: 1px solid var(--primary);
+      border-radius: 3px; padding: 1px 5px;
+      outline: none; color: var(--text); min-width: 60px;
+    }
+
+    /* ── JSON pane ── */
+    #json-ta {
+      width: 100%; height: 100%;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 12px; line-height: 1.55;
+      border: none; resize: none; outline: none;
+      color: var(--text); padding: 10px;
+      background: #fafbfe;
+    }
+    .json-bar {
+      padding: 5px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 6px;
+      background: #f7f8fc; flex-shrink: 0;
+    }
+
+    /* ── Status bar ── */
+    .statusbar {
+      height: 24px;
+      background: #e4e8f2;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 14px; gap: 24px;
+    }
+    .sitem {
+      font-size: 11px; color: var(--muted);
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 38px; left: 50%;
+      transform: translateX(-50%);
+      background: #1a2040; color: #fff;
+      padding: 7px 18px; border-radius: 6px;
+      font-size: 12px; pointer-events: none;
+      opacity: 0; transition: opacity 0.2s;
+      white-space: nowrap; z-index: 9999;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    }
+    #toast.show { opacity: 1; }
+
+    /* ── Drag overlay ── */
+    #drag-overlay {
+      display: none; position: fixed; inset: 0; z-index: 9998;
+      cursor: col-resize;
+    }
+    #drag-overlay.on { display: block; }
+  </style>
+</head>
+<body>
+
+<header>
+  <i class="ti ti-sitemap" style="font-size:20px;opacity:0.85"></i>
+  <h1>AD OU Tree Builder</h1>
+  <div class="hsp"></div>
+  <button class="hbtn" onclick="copyJSON()">
+    <i class="ti ti-copy"></i> Copy JSON
+  </button>
+  <button class="hbtn" onclick="downloadJSON()">
+    <i class="ti ti-download"></i> Download
+  </button>
+</header>
+
+<div class="workspace">
+
+  <!-- Left: Preview -->
+  <div class="panel" id="panel-left">
+    <div class="pnl-hdr">
+      <i class="ti ti-eye" style="font-size:14px;color:var(--muted)"></i>
+      <span class="pnl-title">Preview</span>
+      <div class="sp"></div>
+      <button class="btn" onclick="previewSetAll(true)">Expand all</button>
+      <button class="btn" onclick="previewSetAll(false)" style="margin-left:4px">Collapse all</button>
+    </div>
+    <div class="pnl-body">
+      <ul id="preview-tree" class="tree"></ul>
+    </div>
+  </div>
+
+  <div class="resizer" id="resizer"></div>
+
+  <!-- Right: Editor -->
+  <div class="panel" id="panel-right">
+    <div class="tabs">
+      <div class="tab active" id="tab-builder" onclick="switchTab('builder')">
+        <i class="ti ti-tools"></i> Builder
+      </div>
+      <div class="tab" id="tab-json" onclick="switchTab('json')">
+        <i class="ti ti-code"></i> JSON
+      </div>
+    </div>
+
+    <!-- Builder pane -->
+    <div id="pane-builder" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+      <div class="pnl-hdr">
+        <i class="ti ti-pencil" style="font-size:14px;color:var(--muted)"></i>
+        <span class="pnl-title">Structure</span>
+        <div class="sp"></div>
+        <button class="btn" id="btn-add" onclick="addChildToSelected()" disabled>
+          <i class="ti ti-plus"></i> Add child
+        </button>
+        <button class="btn" id="btn-del" onclick="deleteSelected()" disabled style="margin-left:4px">
+          <i class="ti ti-trash"></i> Delete
+        </button>
+      </div>
+      <div class="pnl-body">
+        <ul id="builder-tree" class="tree"></ul>
+      </div>
+    </div>
+
+    <!-- JSON pane -->
+    <div id="pane-json" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div class="json-bar">
+        <button class="btn primary" onclick="loadFromJSON()">
+          <i class="ti ti-upload"></i> Load JSON
+        </button>
+        <button class="btn" onclick="syncJSON()">
+          <i class="ti ti-refresh"></i> Sync from tree
+        </button>
+        <span style="margin-left:auto;font-size:11px;color:var(--muted)">
+          Paste JSON → Load &nbsp;|&nbsp; Edit tree → Sync from tree
+        </span>
+      </div>
+      <div style="flex:1;overflow:auto">
+        <textarea id="json-ta" spellcheck="false" placeholder="Paste your JSON here..."></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="statusbar">
+  <span class="sitem">
+    <i class="ti ti-world" style="font-size:13px"></i>
+    <span id="st-domain">—</span>
+  </span>
+  <span class="sitem">
+    <i class="ti ti-folder" style="font-size:13px"></i>
+    <span id="st-ous">—</span> OUs
+  </span>
+  <span class="sitem">
+    <i class="ti ti-layers-intersect" style="font-size:13px"></i>
+    Depth: <span id="st-depth">—</span>
+  </span>
+  <span class="sitem" style="margin-left:auto;font-size:10px;opacity:0.7">
+    Hover a node in the builder for inline actions &nbsp;|&nbsp; Drag the divider to resize
+  </span>
+</div>
+
+<div id="toast"></div>
+<div id="drag-overlay"></div>
+
+<script>
+/* ─── State ──────────────────────────────────────────────────────────────── */
+
+let ROOT   = null;   // root node (internal format)
+let selId  = null;   // selected node id in builder
+let idSeq  = 0;
+const pSt  = {};     // preview expand state:  id -> bool
+
+/* ─── Default data ────────────────────────────────────────────────────────── */
+
+const DEFAULT = {"Name":"example.com","Type":"Domain","Description":"","Children":[{"Name":"Admin","Type":"OU","Description":"","Children":[{"Name":"Tier 0","Type":"OU","Description":"","Children":[{"Name":"T0 Groups","Type":"OU","Description":"","Children":[{"Name":"T0 Resource Groups","Type":"OU","Description":"","Children":[]},{"Name":"T0 Role Groups","Type":"OU","Description":"","Children":[]}]},{"Name":"T0 PAWs","Type":"OU","Description":"","Children":[]},{"Name":"T0 Servers","Type":"OU","Description":"","Children":[]},{"Name":"T0 Service Accounts","Type":"OU","Description":"","Children":[]},{"Name":"T0 Users","Type":"OU","Description":"","Children":[]}]},{"Name":"Tier 1","Type":"OU","Description":"","Children":[{"Name":"T1 Computers","Type":"OU","Description":"","Children":[]},{"Name":"T1 Groups","Type":"OU","Description":"","Children":[{"Name":"T1 Resource Groups","Type":"OU","Description":"","Children":[]},{"Name":"T1 Role Groups","Type":"OU","Description":"","Children":[]}]},{"Name":"T1 Servers","Type":"OU","Description":"","Children":[]},{"Name":"T1 Service Accounts","Type":"OU","Description":"","Children":[]},{"Name":"Users","Type":"OU","Description":"","Children":[]}]},{"Name":"Tier 2","Type":"OU","Description":"","Children":[{"Name":"T2 Computers","Type":"OU","Description":"","Children":[]},{"Name":"T2 Groups","Type":"OU","Description":"","Children":[{"Name":"T2 Resource Groups","Type":"OU","Description":"","Children":[]},{"Name":"T2 Role Groups","Type":"OU","Description":"","Children":[]}]},{"Name":"T2 Servers","Type":"OU","Description":"","Children":[]},{"Name":"T2 Service Accounts","Type":"OU","Description":"","Children":[]},{"Name":"T2 Users","Type":"OU","Description":"","Children":[]}]}]},{"Name":"Corporate","Type":"OU","Description":"","Children":[{"Name":"Bind Accounts","Type":"OU","Description":"","Children":[]},{"Name":"Computers","Type":"OU","Description":"","Children":[]},{"Name":"Distribution Lists","Type":"OU","Description":"","Children":[]},{"Name":"Groups","Type":"OU","Description":"","Children":[{"Name":"Resource Groups","Type":"OU","Description":"","Children":[]},{"Name":"Role Groups","Type":"OU","Description":"","Children":[]}]},{"Name":"Users","Type":"OU","Description":"","Children":[{"Name":"Africa","Type":"OU","Description":"","Children":[]},{"Name":"Asia","Type":"OU","Description":"","Children":[]},{"Name":"EU","Type":"OU","Description":"","Children":[]},{"Name":"US","Type":"OU","Description":"","Children":[]}]}]},{"Name":"Domain Controllers","Type":"OU","Description":"","Children":[]}]};
+
+/* ─── Utilities ───────────────────────────────────────────────────────────── */
+
+function gid() { return 'n' + (idSeq++); }
+
+function fromJSON(o) {
+  return {
+    id:          gid(),
+    name:        o.Name        || 'Unnamed',
+    type:        o.Type        || 'OU',
+    description: o.Description || '',
+    children:    (o.Children   || []).map(fromJSON)
+  };
+}
+
+function toJSON(n) {
+  return {
+    Name:        n.name,
+    Type:        n.type,
+    Description: n.description,
+    Children:    n.children.map(toJSON)
+  };
+}
+
+function find(id, n) {
+  if (!n)        return null;
+  if (n.id===id) return n;
+  for (const c of n.children) { const f = find(id, c); if (f) return f; }
+  return null;
+}
+
+function findParent(id, n, par) {
+  if (n.id===id) return par;
+  for (const c of n.children) { const f = findParent(id, c, n); if (f) return f; }
+  return null;
+}
+
+function countOUs(n) {
+  let c = n.type === 'OU' ? 1 : 0;
+  for (const ch of n.children) c += countOUs(ch);
+  return c;
+}
+
+function treeDepth(n, d) {
+  d = d || 0;
+  let m = d;
+  for (const c of n.children) m = Math.max(m, treeDepth(c, d + 1));
+  return m;
+}
+
+function initPSt(n) {
+  pSt[n.id] = true;
+  for (const c of n.children) initPSt(c);
+}
+
+/* ─── Preview tree ────────────────────────────────────────────────────────── */
+
+function renderPreview() {
+  const ul = document.getElementById('preview-tree');
+  ul.innerHTML = '';
+  if (ROOT) buildPNode(ROOT, ul, false);
+}
+
+function buildPNode(n, ul, isBranch) {
+  const hasKids = n.children.length > 0;
+  const exp     = pSt[n.id] !== false;
+
+  const li  = document.createElement('li');
+  if (isBranch) li.className = 'tn';
+
+  const row = document.createElement('div');
+  row.className = 'prow';
+
+  // Expander
+  if (hasKids) {
+    const xb = document.createElement('button');
+    xb.className   = 'xbtn';
+    xb.textContent = exp ? '\u2212' : '+';
+    xb.addEventListener('click', e => { e.stopPropagation(); toggleP(n, xb, kul); });
+    row.appendChild(xb);
+    n._pxb = xb;
+  } else {
+    const g = document.createElement('div'); g.className = 'xgap'; row.appendChild(g);
+    n._pxb = null;
+  }
+
+  // Icon
+  const ic = document.createElement('i');
+  ic.setAttribute('aria-hidden', 'true');
+  if (n.type === 'Domain') {
+    ic.className = 'ti ti-world';
+    ic.style.cssText = 'font-size:15px;color:#1a56a5;flex-shrink:0';
+  } else {
+    ic.className = (hasKids && exp) ? 'ti ti-folder-open' : 'ti ti-folder';
+    ic.style.cssText = 'font-size:15px;color:#d99010;flex-shrink:0';
+  }
+  n._pic = ic;
+  row.appendChild(ic);
+
+  // Label
+  const lb = document.createElement('span');
+  lb.style.cssText = 'font-size:13px;color:#1a1e2e' + (n.type==='Domain' ? ';font-weight:600' : '');
+  lb.textContent = n.name;
+  row.appendChild(lb);
+  li.appendChild(row);
+
+  // Children UL
+  const kul = document.createElement('ul');
+  kul.className    = 'tree tkids';
+  kul.style.display = exp ? '' : 'none';
+  n._pkul = kul;
+  for (const c of n.children) buildPNode(c, kul, true);
+  li.appendChild(kul);
+  ul.appendChild(li);
+}
+
+function toggleP(n, xb, kul) {
+  const nv    = !(pSt[n.id] !== false);
+  pSt[n.id]   = nv;
+  xb.textContent = nv ? '\u2212' : '+';
+  kul.style.display = nv ? '' : 'none';
+  if (n.type !== 'Domain') {
+    n._pic.className = (n.children.length && nv) ? 'ti ti-folder-open' : 'ti ti-folder';
+  }
+}
+
+function previewSetAll(v) {
+  function walk(n) {
+    pSt[n.id] = v;
+    if (n._pxb)  n._pxb.textContent = v ? '\u2212' : '+';
+    if (n._pkul) n._pkul.style.display = v ? '' : 'none';
+    if (n.type !== 'Domain' && n._pic) {
+      n._pic.className = (v && n.children.length) ? 'ti ti-folder-open' : 'ti ti-folder';
+    }
+    for (const c of n.children) walk(c);
+  }
+  if (ROOT) walk(ROOT);
+}
+
+/* ─── Builder tree ────────────────────────────────────────────────────────── */
+
+function renderBuilder() {
+  const ul = document.getElementById('builder-tree');
+  ul.innerHTML = '';
+  if (ROOT) buildBNode(ROOT, ul, false);
+}
+
+function buildBNode(n, ul, isBranch) {
+  const hasKids = n.children.length > 0;
+  const isRoot  = n.type === 'Domain';
+
+  const li  = document.createElement('li');
+  if (isBranch) li.className = 'tn';
+
+  const row = document.createElement('div');
+  row.className    = 'brow' + (n.id === selId ? ' sel' : '');
+  row.dataset.id   = n.id;
+
+  // Expander (builder always starts expanded)
+  if (hasKids) {
+    const xb = document.createElement('button');
+    xb.className   = 'xbtn';
+    xb.textContent = '\u2212';
+    xb.addEventListener('click', e => {
+      e.stopPropagation();
+      const collapsed = kul.style.display === 'none';
+      kul.style.display  = collapsed ? '' : 'none';
+      xb.textContent = collapsed ? '\u2212' : '+';
+    });
+    row.appendChild(xb);
+  } else {
+    const g = document.createElement('div'); g.className = 'xgap'; row.appendChild(g);
+  }
+
+  // Icon
+  const ic = document.createElement('i');
+  ic.setAttribute('aria-hidden', 'true');
+  ic.className   = isRoot ? 'ti ti-world' : (hasKids ? 'ti ti-folder-open' : 'ti ti-folder');
+  ic.style.cssText = 'font-size:15px;flex-shrink:0;color:' + (isRoot ? '#1a56a5' : '#d99010');
+  row.appendChild(ic);
+
+  // Name
+  const nm = document.createElement('span');
+  nm.className  = 'bname' + (isRoot ? ' root' : '');
+  nm.textContent = n.name;
+  row.appendChild(nm);
+
+  // Action buttons (hover/select reveal)
+  const acts = document.createElement('div');
+  acts.className = 'bacts';
+
+  const btnAdd = document.createElement('button');
+  btnAdd.className = 'abtn';
+  btnAdd.title     = 'Add child OU';
+  btnAdd.innerHTML = '<i class="ti ti-plus" style="font-size:11px"></i>';
+  btnAdd.addEventListener('click', e => { e.stopPropagation(); addChildTo(n.id); });
+  acts.appendChild(btnAdd);
+
+  const btnRen = document.createElement('button');
+  btnRen.className = 'abtn';
+  btnRen.title     = 'Rename';
+  btnRen.innerHTML = '<i class="ti ti-pencil" style="font-size:11px"></i>';
+  btnRen.addEventListener('click', e => { e.stopPropagation(); startRename(n.id, nm); });
+  acts.appendChild(btnRen);
+
+  if (!isRoot) {
+    const btnDel = document.createElement('button');
+    btnDel.className = 'abtn del';
+    btnDel.title     = 'Delete';
+    btnDel.innerHTML = '<i class="ti ti-trash" style="font-size:11px"></i>';
+    btnDel.addEventListener('click', e => { e.stopPropagation(); deleteNode(n.id); });
+    acts.appendChild(btnDel);
+  }
+
+  row.appendChild(acts);
+  row.addEventListener('click', () => selectNode(n.id));
+  li.appendChild(row);
+
+  // Children
+  const kul = document.createElement('ul');
+  kul.className = 'tree tkids';
+  for (const c of n.children) buildBNode(c, kul, true);
+  li.appendChild(kul);
+  ul.appendChild(li);
+}
+
+/* ─── Builder actions ─────────────────────────────────────────────────────── */
+
+function selectNode(id) {
+  selId = id;
+  const isRoot = ROOT && id === ROOT.id;
+  document.getElementById('btn-add').disabled = false;
+  document.getElementById('btn-del').disabled = isRoot;
+  document.querySelectorAll('.brow').forEach(r => {
+    r.classList.toggle('sel', r.dataset.id === id);
+  });
+}
+
+function addChildToSelected() {
+  if (selId) addChildTo(selId);
+}
+
+function addChildTo(parentId) {
+  const parent = find(parentId, ROOT);
+  if (!parent) return;
+  const node = { id: gid(), name: 'New OU', type: 'OU', description: '', children: [] };
+  pSt[node.id] = true;
+  parent.children.push(node);
+  selId = node.id;
+  pSt[parentId] = true;  // expand parent in preview
+  rerender();
+  // Immediately start renaming the new node
+  const rows = document.querySelectorAll('.brow');
+  for (const r of rows) {
+    if (r.dataset.id === node.id) {
+      startRename(node.id, r.querySelector('.bname'));
+      r.scrollIntoView({ block: 'nearest' });
+      break;
+    }
+  }
+}
+
+function deleteNode(id) {
+  const n = find(id, ROOT);
+  if (!n) return;
+  const childCount = countOUs(n);
+  if (childCount > 1 && !confirm(`Delete "${n.name}" and all ${childCount} OUs inside it?`)) return;
+  const parent = findParent(id, ROOT, null);
+  if (!parent) return;
+  parent.children = parent.children.filter(c => c.id !== id);
+  if (selId === id) selId = null;
+  rerender();
+}
+
+function deleteSelected() {
+  if (!selId || selId === ROOT.id) return;
+  deleteNode(selId);
+}
+
+function startRename(id, nmEl) {
+  const n = find(id, ROOT);
+  if (!n || !nmEl) return;
+
+  const inp = document.createElement('input');
+  inp.className  = 'rinput';
+  inp.value      = n.name;
+  nmEl.replaceWith(inp);
+  inp.focus();
+  inp.select();
+
+  let done = false;
+
+  function commit() {
+    if (done) return;
+    done = true;
+    n.name = inp.value.trim() || n.name;
+    rerender();
+  }
+
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter')  { e.preventDefault(); inp.blur(); }
+    if (e.key === 'Escape') {
+      if (done) return;
+      done = true;
+      rerender();  // restores original name without saving
+    }
+  });
+}
+
+/* ─── JSON tab ────────────────────────────────────────────────────────────── */
+
+function loadFromJSON() {
+  const raw = document.getElementById('json-ta').value.trim();
+  if (!raw) { toast('Paste JSON first'); return; }
+  try {
+    loadData(JSON.parse(raw));
+    toast('Loaded');
+  } catch(e) {
+    toast('Invalid JSON — ' + e.message.split('\n')[0]);
+  }
+}
+
+function syncJSON() {
+  if (!ROOT) return;
+  document.getElementById('json-ta').value = JSON.stringify(toJSON(ROOT), null, 2);
+}
+
+function loadData(parsed) {
+  ROOT  = fromJSON(parsed);
+  selId = null;
+  initPSt(ROOT);
+  rerender();
+  document.getElementById('json-ta').value = JSON.stringify(toJSON(ROOT), null, 2);
+}
+
+/* ─── Export ──────────────────────────────────────────────────────────────── */
+
+function copyJSON() {
+  if (!ROOT) { toast('Nothing to copy'); return; }
+  navigator.clipboard.writeText(JSON.stringify(toJSON(ROOT), null, 2))
+    .then(() => toast('JSON copied to clipboard'))
+    .catch(() => toast('Copy failed — use the JSON tab'));
+}
+
+function downloadJSON() {
+  if (!ROOT) { toast('Nothing to download'); return; }
+  const json = JSON.stringify(toJSON(ROOT), null, 2);
+  const a    = Object.assign(document.createElement('a'), {
+    href:     URL.createObjectURL(new Blob([json], { type: 'application/json' })),
+    download: (ROOT.name || 'tree') + '.json'
+  });
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ─── UI helpers ──────────────────────────────────────────────────────────── */
+
+function switchTab(t) {
+  ['builder','json'].forEach(id => {
+    document.getElementById('tab-'  + id).classList.toggle('active', id === t);
+    document.getElementById('pane-' + id).style.display = (id === t) ? 'flex' : 'none';
+  });
+  if (t === 'json') syncJSON();
+}
+
+let _toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+function updateStatus() {
+  if (!ROOT) return;
+  document.getElementById('st-domain').textContent = ROOT.name;
+  document.getElementById('st-ous').textContent    = countOUs(ROOT);
+  document.getElementById('st-depth').textContent  = treeDepth(ROOT, 0);
+}
+
+function rerender() {
+  renderPreview();
+  renderBuilder();
+  updateStatus();
+  document.getElementById('btn-add').disabled = !selId;
+  document.getElementById('btn-del').disabled = !selId || selId === ROOT.id;
+  if (selId) {
+    const r = document.querySelector(`.brow[data-id="${selId}"]`);
+    if (r) { r.classList.add('sel'); }
+  }
+}
+
+/* ─── Resizer ─────────────────────────────────────────────────────────────── */
+
+(function () {
+  const resizer  = document.getElementById('resizer');
+  const overlay  = document.getElementById('drag-overlay');
+  const panelL   = document.getElementById('panel-left');
+  let   dragging = false;
+
+  resizer.addEventListener('mousedown', e => {
+    dragging = true;
+    resizer.classList.add('on');
+    overlay.classList.add('on');
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const ws  = document.querySelector('.workspace');
+    const pct = ((e.clientX - ws.getBoundingClientRect().left) / ws.offsetWidth) * 100;
+    panelL.style.width = Math.min(75, Math.max(20, pct)) + '%';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    resizer.classList.remove('on');
+    overlay.classList.remove('on');
+  });
+})();
+
+/* ─── Init ────────────────────────────────────────────────────────────────── */
+
+loadData(DEFAULT);
+</script>
+</body>
+</html>
