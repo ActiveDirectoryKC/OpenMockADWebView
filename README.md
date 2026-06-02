@@ -122,16 +122,16 @@ OpenMockADWebView.html?data=7Vxbc6M4Fv4r...
 | Type | Icon | Notes |
 |---|---|---|
 | Domain | 🌐 | Root node — one per tree |
-| Organizational Unit | 📁 📂 | Primary container type |
-| Container | 📦 | Default AD containers (Builtin, Users, etc.) |
+| Organizational Unit | 📂 | Primary container type |
+| Container | 📁 | Desaturated — distinct from OU |
 | User | 👤 | |
 | Group | 👥 | |
 | Computer | 💻 | |
-| GPO | 📋 | Exported as `[policy]` in Markdown |
+| GPO | 📃 | Exported as `[policy]` in Markdown |
 | MSA | ⚙ (amber) | Managed Service Account |
 | gMSA | ⚙ (slate) | Group Managed Service Account |
 | dMSA | ⚙ (blue) | Delegated MSA — Windows Server 2025 |
-| Contact | 🔗 | |
+| Contact | 💼 | |
 | Printer | 🖨 | |
 | Share | 🗄️ | |
 
@@ -195,6 +195,8 @@ My initial plan was to drop MockAD's JSON output into Claude and get a quick scr
 | v0.1.3 | ✅ | Static viewer export |
 | v0.1.4 | ✅ | GitHub link, attribution, app.js detection, security fixes |
 | v0.2.0 | ✅ | md2ADUC compatibility, new types (dMSA, Contact, Printer, Share), colored MSA icons, Copy Link with compression |
+| v0.2.1 | ✅ | Duplicate Domain Controllers OU fix in tiered templates |
+| v0.3.0 | Planned | Mobile stylesheet / responsive layout |
 | Future | | Object tagging for BadBlood / tooling integration |
 | Future | | PowerShell build script generation from tree |
 

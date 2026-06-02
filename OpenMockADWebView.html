@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OpenMockADWebView v0.2.0</title>
+  <title>OpenMockADWebView v0.2.3</title>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     :root{
@@ -20,8 +20,8 @@
     .hbtn:hover{background:rgba(255,255,255,.22);}
     .workspace{display:flex;height:calc(100vh - 52px - 24px);}
     .panel{display:flex;flex-direction:column;overflow:hidden;background:var(--surface);min-width:0;}
-    #panel-left{width:33%;border-right:1px solid var(--border);}
-    #panel-right{flex:1;}
+    #panel-left{width:25%;border-right:1px solid var(--border);}
+    #panel-right{width:25%;flex-shrink:0;}
     .pnl-hdr{height:40px;padding:0 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:#f7f8fc;flex-shrink:0;}
     .pnl-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
     .sp{flex:1;}
@@ -70,7 +70,7 @@
     #drag-overlay.on{display:block;}
 
     /* Notes panel */
-    #panel-notes{width:280px;border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;background:var(--surface);}
+    #panel-notes{flex:1;border-left:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);}
     .notes-hdr{height:40px;padding:0 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:#f7f8fc;flex-shrink:0;}
     .notes-icon{font-size:16px;}
     .notes-name{font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -224,6 +224,7 @@
     </div>
   </div>
 
+  <div class="resizer" id="resizer-notes"></div>
   <div class="panel" id="panel-notes">
     <div class="notes-hdr">
       <span class="pnl-title">&#x1F4DD; Notes</span>
@@ -245,7 +246,7 @@
 
 <div class="statusbar">
   <span class="sitem">&#x1F310; <span id="st-domain">&mdash;</span></span>
-  <span class="sitem">&#x1F4C1; <span id="st-ous">&mdash;</span> OUs</span>
+  <span class="sitem">&#x1F4C2; <span id="st-ous">&mdash;</span> OUs</span>
   <span class="sitem">&#x1F4E6; <span id="st-objs">&mdash;</span> objects</span>
   <span class="sitem">Depth: <span id="st-depth">&mdash;</span></span>
   <span class="sitem" style="margin-left:auto;font-size:10px;opacity:.7">&copy; Tyler Jacobs | Poolmanjim. Released under the MIT License.</span>
@@ -275,16 +276,16 @@
   <div class="ctx-item" id="ctx-rename">&#x270F;&#xFE0F; Rename</div>
   <hr class="ctx-sep">
   <div class="ctx-section" id="ctx-add-section">Add Child</div>
-  <div class="ctx-item ctx-add" data-type="OU">&#x1F4C1; OU</div>
-  <div class="ctx-item ctx-add" data-type="Container">&#x1F4E6; Container</div>
+  <div class="ctx-item ctx-add" data-type="OU">&#x1F4C2; OU</div>
+  <div class="ctx-item ctx-add" data-type="Container"><span style="filter:saturate(0.4)">&#x1F4C1;</span> Container</div>
   <div class="ctx-item ctx-add" data-type="User">&#x1F464; User</div>
   <div class="ctx-item ctx-add" data-type="Group">&#x1F465; Group</div>
   <div class="ctx-item ctx-add" data-type="Computer">&#x1F4BB; Computer</div>
-  <div class="ctx-item ctx-add" data-type="GPO">&#x1F4CB; GPO</div>
+  <div class="ctx-item ctx-add" data-type="GPO">&#x1F4C3; GPO</div>
   <div class="ctx-item ctx-add" data-type="MSA"><span style="filter:sepia(1) hue-rotate(310deg) saturate(5) brightness(0.9)">&#x2699;&#xFE0F;</span> MSA</div>
   <div class="ctx-item ctx-add" data-type="gMSA">&#x2699;&#xFE0F; gMSA</div>
   <div class="ctx-item ctx-add" data-type="dMSA"><span style="filter:sepia(1) hue-rotate(80deg) saturate(5) brightness(0.9)">&#x2699;&#xFE0F;</span> dMSA</div>
-  <div class="ctx-item ctx-add" data-type="Contact">&#x1FAB9; Contact</div>
+  <div class="ctx-item ctx-add" data-type="Contact">&#x1F4BC; Contact</div>
   <div class="ctx-item ctx-add" data-type="Printer">&#x1F5A8;&#xFE0F; Printer</div>
   <div class="ctx-item ctx-add" data-type="Share">&#x1F5C4;&#xFE0F; Share</div>
   <hr class="ctx-sep">
@@ -294,33 +295,33 @@
 <div id="legend">
   <div class="leg-title">Node Types</div>
   <div class="leg-row"><span class="leg-icon">&#x1F310;</span> Domain</div>
-  <div class="leg-row"><span class="leg-icon">&#x1F4C1;</span> Organizational Unit (OU)</div>
-  <div class="leg-row"><span class="leg-icon">&#x1F4E6;</span> Container</div>
+  <div class="leg-row"><span class="leg-icon">&#x1F4C2;</span> Organizational Unit (OU)</div>
+  <div class="leg-row"><span class="leg-icon" style="filter:saturate(0.4)">&#x1F4C1;</span> Container</div>
   <hr class="leg-sep">
   <div class="leg-row"><span class="leg-icon">&#x1F464;</span> User</div>
   <div class="leg-row"><span class="leg-icon">&#x1F465;</span> Group</div>
   <div class="leg-row"><span class="leg-icon">&#x1F4BB;</span> Computer</div>
-  <div class="leg-row"><span class="leg-icon">&#x1F4CB;</span> GPO</div>
+  <div class="leg-row"><span class="leg-icon">&#x1F4C3;</span> GPO</div>
   <hr class="leg-sep">
   <div class="leg-row"><span class="leg-icon" style="filter:sepia(1) hue-rotate(310deg) saturate(5) brightness(0.9)">&#x2699;&#xFE0F;</span> MSA &mdash; <em style="font-size:10px;color:var(--muted)">red</em></div>
   <div class="leg-row"><span class="leg-icon">&#x2699;&#xFE0F;</span> gMSA &mdash; <em style="font-size:10px;color:var(--muted)">standard</em></div>
   <div class="leg-row"><span class="leg-icon" style="filter:sepia(1) hue-rotate(80deg) saturate(5) brightness(0.9)">&#x2699;&#xFE0F;</span> dMSA &mdash; <em style="font-size:10px;color:var(--muted)">green, WS2025</em></div>
   <hr class="leg-sep">
-  <div class="leg-row"><span class="leg-icon">&#x1FAB9;</span> Contact</div>
+  <div class="leg-row"><span class="leg-icon">&#x1F4BC;</span> Contact</div>
   <div class="leg-row"><span class="leg-icon">&#x1F5A8;&#xFE0F;</span> Printer</div>
   <div class="leg-row"><span class="leg-icon">&#x1F5C4;&#xFE0F;</span> Share</div>
 </div>
 
 <div id="type-picker">
   <div class="tp-section">Containers</div>
-  <div class="tp-item" data-type="OU">&#x1F4C1; Organizational Unit (OU)</div>
-  <div class="tp-item" data-type="Container">&#x1F4E6; Container</div>
+  <div class="tp-item" data-type="OU">&#x1F4C2; Organizational Unit (OU)</div>
+  <div class="tp-item" data-type="Container"><span style="filter:saturate(0.4)">&#x1F4C1;</span> Container</div>
   <hr class="tp-sep">
   <div class="tp-section">Objects</div>
   <div class="tp-item" data-type="User">&#x1F464; User</div>
   <div class="tp-item" data-type="Group">&#x1F465; Group</div>
   <div class="tp-item" data-type="Computer">&#x1F4BB; Computer</div>
-  <div class="tp-item" data-type="GPO">&#x1F4CB; GPO</div>
+  <div class="tp-item" data-type="GPO">&#x1F4C3; GPO</div>
   <hr class="tp-sep">
   <div class="tp-section">Service Accounts</div>
   <div class="tp-item" data-type="MSA"><span style="filter:sepia(1) hue-rotate(310deg) saturate(5) brightness(0.9)">&#x2699;&#xFE0F;</span> Managed Service Account (MSA)</div>
@@ -328,7 +329,7 @@
   <div class="tp-item" data-type="dMSA"><span style="filter:sepia(1) hue-rotate(80deg) saturate(5) brightness(0.9)">&#x2699;&#xFE0F;</span> Delegated MSA (dMSA) <span style="font-size:10px;opacity:.6">WS2025</span></div>
   <hr class="tp-sep">
   <div class="tp-section">Other Objects</div>
-  <div class="tp-item" data-type="Contact">&#x1FAB9; Contact</div>
+  <div class="tp-item" data-type="Contact">&#x1F4BC; Contact</div>
   <div class="tp-item" data-type="Printer">&#x1F5A8;&#xFE0F; Printer</div>
   <div class="tp-item" data-type="Share">&#x1F5C4;&#xFE0F; Share</div>
 </div>
@@ -341,7 +342,7 @@
 <script>
 (function () {
   // Show GitHub link when served from GitHub Pages
-  if (window.location.hostname.endsWith('github.io')) {
+  if (window.location.protocol !== 'file:') {
     var gl = document.getElementById('gh-link');
     if (gl) gl.style.display = '';
   }
