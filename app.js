@@ -810,17 +810,35 @@ function toggleLegend(e) {
 }
 
 /* ─── Click-outside handlers ─────────────────────────────────────────────── */
+
 document.addEventListener('click', function(ev) {
   if (!ev.target.closest('#legend') && !ev.target.closest('#legend-btn'))
     document.getElementById('legend').style.display = 'none';
+
   if (!ev.target.closest('#theme-menu') && !ev.target.closest('#theme-btn'))
     document.getElementById('theme-menu').style.display = 'none';
+
   if (!ev.target.closest('#tmpl-menu') && !ev.target.closest('#tmpl-btn'))
     document.getElementById('tmpl-menu').style.display = 'none';
-  if (!ev.target.closest('#export-menu') && !ev.target.closest('#export-btn'))
-    document.getElementById('export-menu').style.display = 'none';
-  if (!ev.target.closest('#hamburger-menu') && !ev.target.closest('#hamburger-btn'))
-    document.getElementById('hamburger-menu').style.display = 'none';
+
+  var menu = document.getElementById('export-menu');
+  if (menu && menu.style.display === 'block')
+  {
+    if (!ev.target.closest('#export-menu') && !ev.target.closest('#export-btn'))
+    {
+      menu.style.display = 'none';
+    }
+  }
+
+  var hamburgerMenu = document.getElementById('hamburger-menu');
+  if (hamburgerMenu)
+  {
+    if (!ev.target.closest('#hamburger-menu') && !ev.target.closest('#hamburger-btn'))
+    {
+      hamburgerMenu.style.display = 'none';
+    }
+  }
+
   if (!ev.target.closest('#type-picker')) hidePicker();
   if (!ev.target.closest('#ctx-menu')) hideCtxMenu();
 });
@@ -845,6 +863,17 @@ function rerender() {
     if (r) r.classList.add('sel');
   }
 }
+
+// Prevent export menu clicks from bubbling to document
+var exportMenuEl = document.getElementById('export-menu');
+if (exportMenuEl)
+{
+  exportMenuEl.addEventListener('click', function(e)
+  {
+    e.stopPropagation();
+  });
+}
+
 
 /* ─── Resizer ────────────────────────────────────────────────────────────── */
 (function () {
@@ -1514,7 +1543,7 @@ function initMobile() {
 /* ─── Init ───────────────────────────────────────────────────────────────── */
 (function() { try {
   const _t = localStorage.getItem('omadwv-theme');
-  if (_t && ['', 'dark', 'forest', 'hc'].includes(_t)) document.body.className = _t;
+  if (_t && [['', 'dark', 'forest', 'highcontrast']].includes(_t)) document.body.className = _t;
 } catch(e) {} })();
 // Load descriptions first, then apply to the startup template and
 // handle any ?data= URL — both need the registry ready before rendering.
