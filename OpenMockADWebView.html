@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OpenMockADWebView v0.2.3</title>
+  <title>OpenMockADWebView v0.3.0b</title>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     :root{
@@ -173,8 +173,15 @@
   <button class="hbtn" onclick="document.getElementById('json-file-input').click()" title="Import a JSON or Markdown (.md) file">&#x21E7; Load</button>
   <button class="hbtn" id="legend-btn" onclick="toggleLegend(event)" title="View node type legend">&#x2753; Help</button>
   <button class="hbtn" id="export-btn" onclick="toggleExportMenu(event)" title="Export options">&#x21E9; Export &#x25BE;</button>
+  <button class="hbtn" id="hamburger-btn" onclick="toggleHamburgerMenu(event)" title="More options">&#x2630;</button>
   <a class="hbtn" id="gh-link" href="https://github.com/ActiveDirectoryKC/OpenMockADWebView" target="_blank" rel="noopener" style="display:none;text-decoration:none" title="View source on GitHub">&#x1F517;&#xFE0F; GitHub</a>
 </header>
+<div id="hamburger-menu">
+  <div class="tp-item" onclick="showMenuFromHamburger(event,'theme-menu')">&#x1F3A8; Theme</div>
+  <div class="tp-item" onclick="showMenuFromHamburger(event,'tmpl-menu')">&#x1F4CB; Templates</div>
+  <div class="tp-item" onclick="showMenuFromHamburger(event,'legend')">&#x2753; Help</div>
+  <a class="tp-item" id="ham-gh-link" href="https://github.com/ActiveDirectoryKC/OpenMockADWebView" target="_blank" rel="noopener" style="display:none;text-decoration:none;color:inherit">&#x1F517;&#xFE0F; GitHub</a>
+</div>
 <div id="app-missing-banner" style="display:none;background:#8b1a1a;color:#fff;padding:10px 18px;font-size:12px;text-align:center;flex-shrink:0;border-bottom:1px solid #c03030;line-height:1.7">
   <strong>&#x26A0;&#xFE0F; app.js could not be loaded.</strong>
   Ensure <code style="background:rgba(255,255,255,.15);padding:1px 5px;border-radius:3px">app.js</code> is in the same folder as this HTML file.
@@ -345,16 +352,124 @@
 </div>
 
 
+<div id="mobile-tabs">
+  <button class="mob-tab active" data-tab="tree"    onclick="switchMobileTab('tree')"   >&#x1F333; Tree</button>
+  <button class="mob-tab"        data-tab="builder" onclick="switchMobileTab('builder')" >&#x270F;&#xFE0F; Builder</button>
+  <button class="mob-tab"        data-tab="json"    onclick="switchMobileTab('json')"   >{} JSON</button>
+  <button class="mob-tab"        data-tab="notes"   onclick="switchMobileTab('notes')"  >&#x1F4DD; Notes</button>
+</div>
 <div id="toast"></div>
 <div id="drag-overlay"></div>
 <input type="file" id="json-file-input" accept=".json,.md" style="display:none" onchange="loadStructureFile(event)">
+<style>
+/* ============================================================================
+ * OpenMockADWebView — Mobile Layout  (max-width: 768px)
+ * v0.3.0b
+ *
+ * Strategy: CSS-only layout switch. On narrow viewports all panels go
+ * display:none and only the .mob-active panel is shown. The bottom tab bar
+ * drives panel visibility via switchMobileTab() in app.js.
+ * Hamburger overflow menu surfaces Theme, Templates, Help, and GitHub on
+ * mobile where the header buttons are hidden.
+ * ============================================================================ */
+
+/* ── Desktop defaults: hide mobile-only elements ─────────────────────────── */
+#hamburger-btn  { display: none; }
+
+#hamburger-menu {
+  display:    none;
+  position:   fixed;
+  z-index:    1100;
+  background: var(--surface);
+  border:     1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.18);
+  padding:    4px;
+  min-width:  180px;
+}
+
+#mobile-tabs { display: none; }
+
+.mob-tab {
+  flex:            1;
+  border:          none;
+  background:      transparent;
+  color:           var(--muted);
+  font-size:       11px;
+  font-family:     inherit;
+  cursor:          pointer;
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  justify-content: center;
+  padding:         6px 4px;
+  line-height:     1.3;
+  min-height:      48px;
+  border-top:      2px solid transparent;
+  white-space:     nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.mob-tab:hover  { background: var(--plt);    color: var(--primary); }
+.mob-tab.active { background: var(--plt);    color: var(--primary);
+                  border-top-color: var(--primary); }
+
+/* ── Mobile breakpoint ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+
+  /* Header: show hamburger, hide secondary buttons */
+  #hamburger-btn              { display: inline-flex; }
+  #theme-btn, #tmpl-btn, #legend-btn { display: none; }
+
+  /* Workspace height: subtract tab bar.
+   * 100dvh (dynamic viewport height) avoids the iOS Safari URL bar issue.
+   * 100vh fallback for browsers that do not yet support dvh units. */
+  .workspace {
+    height: calc(100vh  - 52px - 24px - 48px);
+    height: calc(100dvh - 52px - 24px - 48px);
+  }
+
+  /* Drag resizers serve no purpose on touch screens */
+  .resizer { display: none !important; }
+
+  /* All panels hidden by default; JS adds .mob-active to show one */
+  #panel-left,
+  #panel-right,
+  #panel-notes {
+    display:    none;
+    width:      100%;
+    flex:       1;
+    flex-shrink: 0;
+  }
+  #panel-left.mob-active,
+  #panel-right.mob-active,
+  #panel-notes.mob-active { display: flex; }
+
+  /* Tab bar */
+  #mobile-tabs {
+    display:     flex;
+    flex-shrink: 0;
+    height:      48px;
+    background:  var(--surface);
+    border-top:  1px solid var(--border);
+  }
+
+  /* Prevent iOS Safari auto-zoom when focusing a textarea or input */
+  #json-ta,
+  #notes-ta { font-size: 16px; }
+
+  /* Touch-friendly minimum tap target on header buttons */
+  .hbtn { min-height: 44px; padding: 6px 10px; }
+}
+</style>
 <script src="app.js"></script>
 <script>
 (function () {
   // Show GitHub link when served from GitHub Pages
   if (window.location.protocol !== 'file:') {
-    var gl = document.getElementById('gh-link');
-    if (gl) gl.style.display = '';
+    var gl  = document.getElementById('gh-link');
+    if (gl)  gl.style.display  = '';
+    var hgl = document.getElementById('ham-gh-link');
+    if (hgl) hgl.style.display = '';
   }
   // Show banner if app.js failed to load (loadData is the first public function defined in it)
   if (typeof loadData === 'undefined') {

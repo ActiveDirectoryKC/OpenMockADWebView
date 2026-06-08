@@ -819,6 +819,8 @@ document.addEventListener('click', function(ev) {
     document.getElementById('tmpl-menu').style.display = 'none';
   if (!ev.target.closest('#export-menu') && !ev.target.closest('#export-btn'))
     document.getElementById('export-menu').style.display = 'none';
+  if (!ev.target.closest('#hamburger-menu') && !ev.target.closest('#hamburger-btn'))
+    document.getElementById('hamburger-menu').style.display = 'none';
   if (!ev.target.closest('#type-picker')) hidePicker();
   if (!ev.target.closest('#ctx-menu')) hideCtxMenu();
 });
@@ -1276,7 +1278,7 @@ function downloadMarkdown() {
   const total  = Object.values(counts).reduce((s, v) => s + v, 0);
   const header = [
     '# Active Directory Structure', '',
-    'Exported from: OpenMockADWebView v0.3.0a',
+    'Exported from: OpenMockADWebView v' + APP_VERSION,
     'Date: ' + date,
     'Total Objects: ' + total, ''
   ].join('\n');
@@ -1290,7 +1292,12 @@ function downloadMarkdown() {
 }
 
 /* ─── JSON Validation ────────────────────────────────────────────────────── */
-const VALID_TYPES = new Set(['Domain','OU','Container','User','Group','Computer','GPO','MSA','gMSA']);
+const APP_VERSION = '0.3.0b';
+
+const VALID_TYPES = new Set([
+  'Domain', 'OU', 'Container', 'User', 'Group', 'Computer',
+  'GPO', 'MSA', 'gMSA', 'dMSA', 'Contact', 'Printer', 'Share'
+]);
 
 function validateADJSON(obj, path) {
   const errs = { critical: [], warnings: [] };
@@ -1443,8 +1450,72 @@ function initQueryString() {
     });
 }
 
+/* ─── Mobile ──────────────────────────────────────────────────────────────────────────────── */
+
+// switchMobileTab — shows the target panel and updates the tab bar.
+// Builder and JSON share panel-right; the inner switchTab() call keeps
+// the correct pane visible within it.
+function switchMobileTab(name) {
+  document.querySelectorAll('.mob-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.tab === name);
+  });
+  var panelMap = {
+    tree:    'panel-left',
+    builder: 'panel-right',
+    json:    'panel-right',
+    notes:   'panel-notes'
+  };
+  ['panel-left', 'panel-right', 'panel-notes'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('mob-active');
+  });
+  var target = document.getElementById(panelMap[name]);
+  if (target) target.classList.add('mob-active');
+  if (name === 'builder' || name === 'json') switchTab(name);
+}
+
+// toggleHamburgerMenu — opens/closes the overflow menu in the header.
+function toggleHamburgerMenu(e) {
+  e.stopPropagation();
+  var el  = document.getElementById('hamburger-menu');
+  var btn = document.getElementById('hamburger-btn');
+  if (el.style.display === 'block') { el.style.display = 'none'; return; }
+  var r = btn.getBoundingClientRect();
+  el.style.top   = (r.bottom + 6) + 'px';
+  el.style.right = (window.innerWidth - r.right) + 'px';
+  el.style.left  = 'auto';
+  el.style.display = 'block';
+}
+
+// showMenuFromHamburger — closes the hamburger then shows a named sub-menu
+// positioned relative to the hamburger button.
+// Used by Theme, Templates, and Help items inside the hamburger menu.
+function showMenuFromHamburger(e, menuId) {
+  e.stopPropagation();
+  document.getElementById('hamburger-menu').style.display = 'none';
+  var el = document.getElementById(menuId);
+  if (!el) return;
+  if (el.style.display === 'block') { el.style.display = 'none'; return; }
+  var btn = document.getElementById('hamburger-btn');
+  var r   = btn.getBoundingClientRect();
+  el.style.top   = (r.bottom + 6) + 'px';
+  el.style.right = (window.innerWidth - r.right) + 'px';
+  el.style.left  = 'auto';
+  el.style.display = 'block';
+}
+
+// initMobile — sets the default active tab on narrow viewports.
+// Called once at startup; the media query handles layout, this handles state.
+function initMobile() {
+  if (!window.matchMedia('(max-width: 768px)').matches) return;
+  switchMobileTab('tree');
+}
+
 /* ─── Init ───────────────────────────────────────────────────────────────── */
-(function() { try { const t = localStorage.getItem('omadwv-theme'); if (t) document.body.className = t; } catch(e) {} })();
+(function() { try {
+  const _t = localStorage.getItem('omadwv-theme');
+  if (_t && ['', 'dark', 'forest', 'hc'].includes(_t)) document.body.className = _t;
+} catch(e) {} })();
 // Load descriptions first, then apply to the startup template and
 // handle any ?data= URL — both need the registry ready before rendering.
 _loadTemplateDescs().then(function(descs) {
@@ -1452,5 +1523,6 @@ _loadTemplateDescs().then(function(descs) {
   _applyDescs(d, 'TMPL_TIERED', descs, '');
   loadData(d);
   initQueryString();
+initMobile();
 });
 
