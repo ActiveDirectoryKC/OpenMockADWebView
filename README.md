@@ -35,6 +35,20 @@ app.js                   Required — core logic (must be alongside the HTML)
 index.html               Redirect entry (GitHub Pages)
 ```
 
+## External Template Loading
+
+Templates can be loaded from the same directory:
+
+OpenMockADWebView.html?template=templates/example.json
+
+Requirements:
+- File must be hosted on the same web server
+- Local file loading (file://) is not supported due to browser security
+
+For fully portable sharing:
+Use "Export Static Viewer"
+
+
 ---
 
 ## Browser Compatibility
