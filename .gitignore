@@ -4,6 +4,9 @@
 
 # --- Directories: Excluded ---
 archive/
+PowerShell/
+Python/
+output/
 
 # --- OS: Windows ---
 Thumbs.db
@@ -32,6 +35,9 @@ $RECYCLE.BIN/
 # --- Editor: JetBrains / Rider ---
 .idea/
 *.iml
+
+# --- Python patcher files
+patch_*.py
 
 # --- PowerShell ---
 # Pester test results
