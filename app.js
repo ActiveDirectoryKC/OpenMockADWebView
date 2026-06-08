@@ -1555,3 +1555,14 @@ _loadTemplateDescs().then(function(descs) {
 initMobile();
 });
 
+
+// Load descriptions first...
+_loadTemplateDescs().then(function(descs) {
+  var d = JSON.parse(JSON.stringify(TMPL_TIERED));
+  _applyDescs(d, 'TMPL_TIERED', descs, '');
+  loadData(d);
+  initQueryString();
+  initMobile();
+});
+
+
