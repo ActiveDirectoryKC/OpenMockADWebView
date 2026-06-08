@@ -94,11 +94,13 @@
     #notes-preview blockquote{border-left:3px solid var(--primary);padding:4px 12px;margin:6px 0;color:var(--muted);background:#f8f9fc;border-radius:0 4px 4px 0;}
 
     /* Popups */
-    #type-picker,#ctx-menu,#legend,#tmpl-menu,#theme-menu{display:none;position:fixed;z-index:1000;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.15);padding:4px;}
+    #type-picker,#ctx-menu,#legend,#tmpl-menu,#theme-menu,#export-menu{display:none;position:fixed;z-index:1000;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.15);padding:4px;}
     #type-picker{min-width:230px;}
     #ctx-menu{min-width:190px;z-index:1100;}
     #legend{min-width:240px;padding:12px 16px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);}
     #tmpl-menu{min-width:280px;}
+    #export-menu{min-width:200px;}
+    .notes-dn{font-size:10px;font-family:monospace;color:var(--muted);padding:0 12px 8px;user-select:all;cursor:text;word-break:break-all;}
     #theme-menu{min-width:180px;}
     .tp-section{padding:4px 10px 2px;font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;}
     .tp-item{display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;border-radius:4px;font-size:12px;white-space:nowrap;}
@@ -170,11 +172,7 @@
   <button class="hbtn" id="tmpl-btn" onclick="toggleTmplMenu(event)" title="Load a pre-built OU structure template">&#x1F4CB; Templates</button>
   <button class="hbtn" onclick="document.getElementById('json-file-input').click()" title="Import a JSON or Markdown (.md) file">&#x21E7; Load</button>
   <button class="hbtn" id="legend-btn" onclick="toggleLegend(event)" title="View node type legend">&#x2753; Help</button>
-  <button class="hbtn" onclick="copyLink()" title="Copy a ?data= URL that encodes the current tree — works offline, no server needed">&#x1F517;&#xFE0F; Copy Link</button>
-  <button class="hbtn" onclick="exportStaticViewer()" title="Export a self-contained read-only HTML viewer for sharing">&#x1F4E4; Export Viewer</button>
-  <button class="hbtn" onclick="copyJSON()" title="Copy current tree as JSON to clipboard">&#x2398; Copy JSON</button>
-  <button class="hbtn" onclick="downloadJSON()" title="Download current tree as a JSON file">&#x2193; Download</button>
-  <button class="hbtn" onclick="downloadMarkdown()" title="Export as md2ADUC-compatible Markdown (.md)">&#x1F4DD; Export MD</button>
+  <button class="hbtn" id="export-btn" onclick="toggleExportMenu(event)" title="Export options">&#x21E9; Export &#x25BE;</button>
   <a class="hbtn" id="gh-link" href="https://github.com/ActiveDirectoryKC/OpenMockADWebView" target="_blank" rel="noopener" style="display:none;text-decoration:none" title="View source on GitHub">&#x1F517;&#xFE0F; GitHub</a>
 </header>
 <div id="app-missing-banner" style="display:none;background:#8b1a1a;color:#fff;padding:10px 18px;font-size:12px;text-align:center;flex-shrink:0;border-bottom:1px solid #c03030;line-height:1.7">
@@ -190,7 +188,6 @@
       <span class="pnl-title">Tree View</span>
       <div class="sp"></div>
       <button class="btn" id="btn-hide-builtins" onclick="toggleHideBuiltins()" title="Toggle visibility of default AD builtin objects">&#x1F441; Builtins</button>
-      <button class="btn" onclick="exportPNG()" title="Export tree view as a PNG image">&#x1F4F7; PNG</button>
       <button class="btn" onclick="previewSetAll(true)" title="Expand all tree nodes">Expand all</button>
       <button class="btn" onclick="previewSetAll(false)" title="Collapse all tree nodes">Collapse all</button>
     </div>
@@ -238,6 +235,7 @@
         <span class="notes-name" id="notes-name"></span>
       </div>
       <div class="notes-path" id="notes-path"></div>
+      <div class="notes-dn" id="notes-dn"></div>
       <textarea id="notes-ta" placeholder="Add notes (markdown supported)..." spellcheck="false"></textarea>
       <div id="notes-preview" style="display:none"></div>
     </div>
@@ -250,6 +248,18 @@
   <span class="sitem">&#x1F4E6; <span id="st-objs">&mdash;</span> objects</span>
   <span class="sitem">Depth: <span id="st-depth">&mdash;</span></span>
   <span class="sitem" style="margin-left:auto;font-size:10px;opacity:.7">&copy; Tyler Jacobs | Poolmanjim. Released under the MIT License.</span>
+</div>
+
+<div id="export-menu">
+  <div class="tmpl-item" onclick="downloadJSON();hideExportMenu()">&#x2193; JSON</div>
+  <div class="tmpl-item" onclick="downloadMarkdown();hideExportMenu()">&#x1F4DD; Markdown</div>
+  <div class="tmpl-item" onclick="exportPNG();hideExportMenu()">&#x1F4F7; PNG</div>
+  <div class="tmpl-item" onclick="exportStaticViewer();hideExportMenu()">&#x1F4E4; Static Viewer</div>
+  <hr class="ctx-sep">
+  <div class="tmpl-item" onclick="copyJSON();hideExportMenu()">&#x2398; Copy JSON</div>
+  <div class="tmpl-item" onclick="copyLink();hideExportMenu()">&#x1F517;&#xFE0F; Copy Structure URL</div>
+  <hr class="ctx-sep">
+  <div class="tmpl-item" onclick="exportAll()">&#x26A1; Export All (JSON + MD + PNG)</div>
 </div>
 
 <!-- Popups -->
